@@ -2,3 +2,13 @@ Map over fishing areas in north east atlantic: https://open-data-fiskeridirektor
 Even more detail: https://open-data-fiskeridirektoratet-fiskeridir.hub.arcgis.com/datasets/33126ef90c6d4b1a812385de6f4fb4e9_8/explore?location=68.805623%2C16.763284%2C6.02
 
 Can be downloaded as GEOJSON it seems. 
+
+Problems:
+Some vessels report different gear types, also over a short period.
+    Some boats have the same name! Check the vessel ID, must be the same. How to link this to mmsi? cant really join on vessel name. 
+    A bit inaccurate, COULD do some region filter, but two vessels with the same name could operate in the same area
+And why does some ships show up in the fangstdata and not AIS, because it is filtered for north and south of 62!
+
+
+Improvements:
+Could filter out vessels under 15 minutes, as they are not required to use AIS

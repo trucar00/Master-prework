@@ -1,0 +1,4 @@
+Map over fishing areas in north east atlantic: https://open-data-fiskeridirektoratet-fiskeridir.hub.arcgis.com/datasets/6d06c157a3c5437aac197a5385c7ef06_6/explore?location=69.188056%2C14.415636%2C3.95
+Even more detail: https://open-data-fiskeridirektoratet-fiskeridir.hub.arcgis.com/datasets/33126ef90c6d4b1a812385de6f4fb4e9_8/explore?location=68.805623%2C16.763284%2C6.02
+
+Can be downloaded as GEOJSON it seems. 

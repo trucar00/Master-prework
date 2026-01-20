@@ -7,6 +7,7 @@ Problems:
 Some vessels report different gear types, also over a short period.
     Some boats have the same name! Check the vessel ID, must be the same. How to link this to mmsi? cant really join on vessel name. 
     A bit inaccurate, COULD do some region filter, but two vessels with the same name could operate in the same area
+    Use callsign.
 And why does some ships show up in the fangstdata and not AIS, because it is filtered for north and south of 62!
 
 

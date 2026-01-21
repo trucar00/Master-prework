@@ -5,11 +5,16 @@ Can be downloaded as GEOJSON it seems.
 
 Problems:
 Some vessels report different gear types, also over a short period.
-    Some boats have the same name! Check the vessel ID, must be the same. How to link this to mmsi? cant really join on vessel name. 
-    A bit inaccurate, COULD do some region filter, but two vessels with the same name could operate in the same area
-    Use callsign.
+    Merged on callsign. Improves things alot. But still some vessel that uses different gears also on the same day.
 And why does some ships show up in the fangstdata and not AIS, because it is filtered for north and south of 62!
+And why does some ships show up in AIS and not fangstdata. They deliver to other places than norway.
+Methods are not so distinct
+
+TODO:
+    Find transshipment cases. Mottaksfartøy exists in the dataset.
+    Må se nærmere på disse. Alle er nok ikke fiskefartøy (de som mottar)
+    Get AIS for the whole of 2024. Or try with the extended AIS. And include a bigger region of intrest. 
 
 
 Improvements:
-Could filter out vessels under 15 minutes, as they are not required to use AIS
+Could filter out vessels under 15 meters, as they are not required to use AIS

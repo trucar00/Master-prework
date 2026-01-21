@@ -4,7 +4,7 @@ df = pd.read_csv("Data/fangstdata_2024.csv", sep=";", encoding="utf-8", decimal=
 
 df = df[["Fartøynavn", "Fartøy ID", "Radiokallesignal (seddel)",  "Fartøytype (kode)", "Fartøynasjonalitet (kode)", "Største lengde", 
          "Siste fangstdato", "Redskap", "Redskap - gruppe", "Fangstfelt (kode)", "Hovedområde (kode)", "Hovedområde", "Lon (hovedområde)", "Lat (hovedområde)", 
-         "Nord/sør for 62 grader nord", "Landingsdato", "Art FAO", "Bruttovekt"]]
+         "Nord/sør for 62 grader nord", "Landingsdato", "Art FAO", "Produktvekt"]]
 
 df["Fartøy ID"] = df["Fartøy ID"].astype("Int64").astype("string")
 

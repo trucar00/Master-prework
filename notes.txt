@@ -13,8 +13,15 @@ Methods are not so distinct
 TODO:
     Find transshipment cases. Mottaksfartøy exists in the dataset.
     Må se nærmere på disse. Alle er nok ikke fiskefartøy (de som mottar)
-    Get AIS for the whole of 2024. Or try with the extended AIS. And include a bigger region of intrest. 
+    Get AIS for the whole of 2024. Or try with the extended AIS. And include a bigger region of intrest.
+    Trying with the whole of january. Find all sts cases in january. get data, but only messages with callsign in the fangstdata...
+    Try to use MMSI... callsign is not very reliable. 
+
 
 
 Improvements:
 Could filter out vessels under 15 meters, as they are not required to use AIS
+
+
+Datasets from fisdir:
+https://www.fiskeridir.no/statistikk-tall-og-analyse/data-og-statistikk-om-yrkesfiske/apne-data-elektronisk-rapportering-ers

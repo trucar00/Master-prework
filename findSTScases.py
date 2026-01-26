@@ -19,9 +19,9 @@ print(sts_df[["Radiokallesignal (seddel)", "Mottakende fartøy rkal"]].head())
 
 print(sts_df.shape)
 
-#sts_df.to_csv("Data/STS/fangstdata_2024_sts.csv", index=False)
+sts_df.to_csv("Data/STS/fangstdata_2024_sts.csv", index=False)
 
-ais_df = pd.read_parquet("Data/01.parquet", engine="pyarrow")
+ais_df = pd.read_parquet("Data/AIS/01.parquet", engine="pyarrow")
 ais_df["date_time_utc"] = pd.to_datetime(ais_df["date_time_utc"])
 
 t_min = ais_df["date_time_utc"].min()
@@ -56,7 +56,7 @@ ais_df["callsign"] = ais_df["callsign"].astype("string").str.strip()
 ais_sts = ais_df.loc[ais_df["callsign"].isin(all_set)].copy()
 ais_sts["Receiving_vessel"] = ais_sts["callsign"].isin(receiver_set)
 
-ais_sts.to_csv("Data/STS/ais.csv", index=False)
+#ais_sts.to_csv("Data/STS/ais.csv", index=False)
 
 print("AIS rows before:", len(ais_df))
 print("AIS rows after STS filter:", len(ais_sts))

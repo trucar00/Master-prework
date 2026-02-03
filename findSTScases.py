@@ -1,4 +1,6 @@
 import pandas as pd
+import pyarrow.parquet as pq
+import matplotlib.pyplot as plt
 
 df = pd.read_csv("Data/fangstdata_2024.csv", sep=";", encoding="utf-8", decimal=",")
 
@@ -13,58 +15,54 @@ sts_df = df[
     df["Radiokallesignal (seddel)"].notna()
 ]
 
+sts_df["Radiokallesignal (seddel)"] = sts_df["Radiokallesignal (seddel)"].astype("string").str.strip().str.upper()
+sts_df["Mottakende fartøy rkal"] = sts_df["Mottakende fartøy rkal"].astype("string").str.strip().str.upper()
+
 sts_df["Siste fangstdato"] = pd.to_datetime(sts_df["Siste fangstdato"], format="%d.%m.%Y", errors="coerce")
+sts_df["Landingsdato"] = pd.to_datetime(sts_df["Landingsdato"], format="%d.%m.%Y", errors="coerce")
+sts_df = sts_df.loc[sts_df["Siste fangstdato"].between("2024-01-01", "2024-01-31 23:59:59")]
 
-print(sts_df[["Radiokallesignal (seddel)", "Mottakende fartøy rkal"]].head())
+print(sts_df[["Radiokallesignal (seddel)", "Mottakende fartøy rkal", "Siste fangstdato", "Landingsdato"]].head())
+print(sts_df.loc[sts_df["Radiokallesignal (seddel)"] == "LK3887"][["Radiokallesignal (seddel)", "Mottakende fartøy rkal", "Landingsdato"]])
 
-print(sts_df.shape)
 
-sts_df.to_csv("Data/STS/fangstdata_2024_sts.csv", index=False)
+receiver_vessel = list(sts_df["Mottakende fartøy rkal"].unique())
+giving_vessel = list(sts_df["Radiokallesignal (seddel)"].unique())
+sts_callsigns = receiver_vessel + giving_vessel
 
-ais_df = pd.read_parquet("Data/AIS/01.parquet", engine="pyarrow")
-ais_df["date_time_utc"] = pd.to_datetime(ais_df["date_time_utc"])
+print(sts_callsigns)
 
-t_min = ais_df["date_time_utc"].min()
-t_max = ais_df["date_time_utc"].max()
+check = ["LK3887", "LCMN"]
 
-print("AIS window: ", t_min, "->", t_max)
-
-sts_in_window = sts_df.loc[
-    sts_df["Siste fangstdato"].between(t_min, t_max, inclusive="both")
-].copy()
-
-sender_callsigns = (
-    sts_in_window["Radiokallesignal (seddel)"]
-    .astype("string")
-    .str.strip()
-    .dropna()
+table = pq.read_table(
+    "Data/AIS/whole_month/01.parquet",
+    columns=["mmsi", "callsign", "date_time_utc", "lon", "lat"],
+    filters=[("callsign", "in", sts_callsigns)]
 )
 
-receiver_callsigns = (
-    sts_in_window["Mottakende fartøy rkal"]
-    .astype("string")
-    .str.strip()
-    .dropna()
-)
+df_ais = table.to_pandas()
 
-sender_set = set(sender_callsigns.unique())
-receiver_set = set(receiver_callsigns.unique())
-all_set = sender_set | receiver_set
-
-ais_df["callsign"] = ais_df["callsign"].astype("string").str.strip()
-
-ais_sts = ais_df.loc[ais_df["callsign"].isin(all_set)].copy()
-ais_sts["Receiving_vessel"] = ais_sts["callsign"].isin(receiver_set)
-
-#ais_sts.to_csv("Data/STS/ais.csv", index=False)
-
-print("AIS rows before:", len(ais_df))
-print("AIS rows after STS filter:", len(ais_sts))
-print(ais_sts[["date_time_utc", "callsign", "Receiving_vessel"]].head())
+print(df_ais.shape)
 
 
-""" print(df["Redskap - gruppe"].unique())
+fig, ax = plt.subplots(figsize=(10,8))
 
-for gear, d in df.groupby("Redskap - gruppe"):
-    gear = gear.replace(" ", "_")
-    d.to_csv(f"Data/{gear}_2024.csv") """
+for radio, d in df_ais.groupby("callsign"):
+    
+
+    d["date_time_utc"] = pd.to_datetime(d["date_time_utc"])
+    d = d.sort_values(by="date_time_utc")
+    if radio in receiver_vessel:
+        ax.plot(d["lon"], d["lat"], linewidth=0.7, alpha=0.7, linestyle="--", label="Receiving")
+    elif radio in giving_vessel:
+        ax.plot(d["lon"], d["lat"], linewidth=0.7, alpha=0.7, label="Giving")
+        print(radio, " is giving")
+    else:
+        print(radio, " wtf")
+
+ax.legend()
+ax.set_xlabel("Longitude")
+ax.set_ylabel("Latitude")
+plt.show()
+
+# LK3887, LCMN: no obvious sts case

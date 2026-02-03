@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = pd.read_parquet("01-01.parquet", engine="pyarrow")
+df = pd.read_parquet("Data/AIS/whole_month/01.parquet", engine="pyarrow")
 print(df.columns)
 print(df.shape)
 print(df["mmsi"].nunique())
@@ -28,7 +28,6 @@ for name, d in df.groupby("mmsi"):
     d["date_time_utc"] = pd.to_datetime(d["date_time_utc"])
     d = d.sort_values(by="date_time_utc")
     ax.plot(d["lon"], d["lat"], linewidth=0.7, alpha=0.7)
-
 
 ax.set_xlabel("Longitude")
 ax.set_ylabel("Latitude")

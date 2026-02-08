@@ -1,195 +1,239 @@
-"""
-Find vessel pairs that are within D_METERS for at least MIN_DURATION minutes.
-
-Output columns:
-mmsi1, mmsi2, start_time, out_time
-
-Notes:
-- Uses spatiotemporal pruning:
-  1) read AIS in lat/lon tiles with pyarrow filters
-  2) time-bin inside each tile
-  3) BallTree (haversine) to find pairs within distance in each time bin
-  4) stitch consecutive time bins into continuous "close" intervals
-
-- "close in a bin" is evaluated using ONE point per vessel per bin (the last message in the bin).
-  This is conservative (fewer false positives, may miss some encounters if AIS is sparse).
-"""
-
-import numpy as np
 import pandas as pd
+import numpy as np
 import pyarrow.parquet as pq
 from sklearn.neighbors import BallTree
 
 # -----------------------------
-# USER SETTINGS
+# User parameters
 # -----------------------------
 AIS_PATH = "../Data/AIS/whole_month/01clean.parquet"
 
-# Region tiling (degrees)
-REGION_LAT_MIN = 55     # if you actually mean north of 62, set to 62
-REGION_LAT_MAX = 90
-REGION_LON_MIN = -10
-REGION_LON_MAX = 45
+REGION_LAT = 55
+REGION_LON_EAST = 45
+REGION_LON_WEST = -10
 
-N_LAT_TILES = 5
-N_LON_TILES = 5
+# Distance threshold for "close"
+D_METERS = 50
+EARTH_R = 6_371_000
+RADIUS_RAD = D_METERS / EARTH_R  # for haversine BallTree
 
-# Proximity + time requirements
-D_METERS = 30
-BIN = "2min"                # detection resolution (recommend 1–2min for 10min persistence)
-MIN_DURATION_MINUTES = 10   # required close time
+# How long they must be continuously close
+MIN_DURATION = pd.Timedelta("10min")
 
-# Optional pruning (uncomment if you want)
-# MAX_SPEED_KTS = 2.0
-# FISHING_TYPE_CODE = 30
+# Common time grid after resampling
+RESAMPLE_FREQ = "1min"
+
+# Do not interpolate across gaps larger than this
+MAX_INTERP_GAP = pd.Timedelta("15min")
+
+# Optional: ignore vessels with too few points in tile (before resampling)
+MIN_POINTS_PER_VESSEL = 3
+
+# Tile grid
+N_TILES_LAT = 5
+N_TILES_LON = 5
 
 # -----------------------------
-# CONSTANTS
+# Helpers
 # -----------------------------
-EARTH_R = 6_371_000.0
-RADIUS_RAD = D_METERS / EARTH_R
-BIN_TD = pd.Timedelta(BIN)
-MIN_BINS = int(np.ceil(MIN_DURATION_MINUTES / (BIN_TD.total_seconds() / 60.0)))
+def _pair_key(a: int, b: int) -> tuple[int, int]:
+    return (a, b) if a < b else (b, a)
 
-# -----------------------------
-# HELPERS
-# -----------------------------
-def pairs_in_bin(g: pd.DataFrame) -> pd.DataFrame:
+def resample_vessels(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Return pairs (mmsi_1, mmsi_2) that are within D_METERS in this time bin.
-    Uses one point per vessel per bin (last message).
+    Resample each MMSI to RESAMPLE_FREQ using time interpolation for lat/lon.
+    Interpolation only inside data range and limited by MAX_INTERP_GAP.
     """
-    if len(g) < 2:
-        return pd.DataFrame(columns=["time_bin", "mmsi_1", "mmsi_2"])
+    df = df.copy()
+    df["date_time_utc"] = pd.to_datetime(df["date_time_utc"], utc=True, errors="coerce")
+    df = df.dropna(subset=["mmsi", "lat", "lon", "date_time_utc"])
+    df = df.sort_values(["mmsi", "date_time_utc"])
 
-    # One point per vessel per bin (keeps compute bounded)
-    g = g.sort_values("date_time_utc").drop_duplicates("mmsi", keep="last")
-    if len(g) < 2:
-        return pd.DataFrame(columns=["time_bin", "mmsi_1", "mmsi_2"])
+    out_parts = []
+    # number of steps we allow interpolation across
+    max_steps = int(MAX_INTERP_GAP / pd.Timedelta(RESAMPLE_FREQ))
 
-    coords = np.deg2rad(g[["lat", "lon"]].to_numpy())
-    tree = BallTree(coords, metric="haversine")
-    neigh = tree.query_radius(coords, r=RADIUS_RAD)
+    for mmsi, g in df.groupby("mmsi", sort=False):
+        if len(g) < MIN_POINTS_PER_VESSEL:
+            continue
 
-    mmsi = g["mmsi"].to_numpy()
-    tbin = g["time_bin"].iloc[0]
+        g = g.drop_duplicates(subset=["date_time_utc"])
+        g = g.set_index("date_time_utc")[["lat", "lon"]].sort_index()
 
-    out = []
-    for i, js in enumerate(neigh):
-        for j in js:
-            if j <= i:
-                continue
-            out.append((tbin, int(mmsi[i]), int(mmsi[j])))
+        # Build the per-vessel grid (you can also use a global tile grid; per-vessel is cheaper)
+        start = g.index.min().floor(RESAMPLE_FREQ)
+        end = g.index.max().ceil(RESAMPLE_FREQ)
+        idx = pd.date_range(start, end, freq=RESAMPLE_FREQ, tz="UTC")
 
-    return pd.DataFrame(out, columns=["time_bin", "mmsi_1", "mmsi_2"])
+        r = g.reindex(idx)
+
+        # --- FIX: clamp interpolation limit to series length (prevents sliding_window_view crash)
+        # r has length = len(idx). If limit >= len(r), pandas/numpy can crash.
+        safe_limit = None
+        if max_steps is not None:
+            safe_limit = max(0, min(max_steps, len(r) - 1))
+            # If there's 0 or 1 sample, interpolation is meaningless anyway
+            if safe_limit == 0:
+                # still allow "inside" interpolation if there are no gaps (won't fill anything)
+                pass
+
+        r[["lat", "lon"]] = r[["lat", "lon"]].interpolate(
+            method="time",
+            limit=safe_limit,
+            limit_area="inside",
+        )
 
 
-def stitch_runs(pairs_all: pd.DataFrame) -> pd.DataFrame:
+        r = r.dropna(subset=["lat", "lon"])
+        if r.empty:
+            continue
+
+        r = r.reset_index().rename(columns={"index": "t"})
+        r["mmsi"] = mmsi
+        out_parts.append(r[["t", "mmsi", "lat", "lon"]])
+
+    if not out_parts:
+        return pd.DataFrame(columns=["t", "mmsi", "lat", "lon"])
+
+    return pd.concat(out_parts, ignore_index=True)
+
+def find_close_intervals(resampled: pd.DataFrame) -> pd.DataFrame:
     """
-    Convert per-bin proximity detections into continuous runs.
-    Returns mmsi1, mmsi2, start_time, out_time (out_time is end of run).
+    For each timestamp, find pairs within distance.
+    Then track continuous 'close' runs; output runs >= MIN_DURATION.
     """
-    if pairs_all.empty:
+    if resampled.empty:
         return pd.DataFrame(columns=["mmsi1", "mmsi2", "start_time", "out_time"])
 
-    # Normalize ordering so (A,B) == (B,A)
-    pairs_all[["mmsi_1", "mmsi_2"]] = np.sort(
-        pairs_all[["mmsi_1", "mmsi_2"]].values, axis=1
-    )
+    resampled = resampled.sort_values(["t", "mmsi"]).reset_index(drop=True)
 
-    # Drop duplicate detections that can happen if you later add buffer/overlap logic
-    pairs_all = pairs_all.drop_duplicates(subset=["time_bin", "mmsi_1", "mmsi_2"])
+    # Active runs: key -> (start_time, last_time)
+    active: dict[tuple[int, int], tuple[pd.Timestamp, pd.Timestamp]] = {}
+    results = []
 
-    pairs_all = pairs_all.sort_values(["mmsi_1", "mmsi_2", "time_bin"]).reset_index(drop=True)
+    freq_td = pd.Timedelta(RESAMPLE_FREQ)
+    # allow a little tolerance (e.g. missing one tick because of dropna)
+    cont_tol = freq_td * 1.5
 
-    # Identify gaps larger than one bin => new run
-    dt = pairs_all.groupby(["mmsi_1", "mmsi_2"])["time_bin"].diff()
-    new_run = (dt.isna()) | (dt > BIN_TD)
-    pairs_all["run_id"] = new_run.groupby([pairs_all["mmsi_1"], pairs_all["mmsi_2"]]).cumsum()
+    for t, g in resampled.groupby("t", sort=True):
+        if len(g) < 2:
+            # no pairs possible; finalize anything that doesn't get continued
+            continue
 
-    runs = (
-        pairs_all.groupby(["mmsi_1", "mmsi_2", "run_id"])
-        .agg(start_time=("time_bin", "min"),
-             last_bin=("time_bin", "max"),
-             bins=("time_bin", "nunique"))
-        .reset_index()
-    )
+        mmsis = g["mmsi"].to_numpy()
+        coords = np.deg2rad(g[["lat", "lon"]].to_numpy())  # radians for haversine
 
-    # Duration in bins -> require at least MIN_DURATION_MINUTES
-    runs = runs[runs["bins"] >= MIN_BINS].copy()
+        tree = BallTree(coords, metric="haversine")
+        neighbors = tree.query_radius(coords, r=RADIUS_RAD, return_distance=False)
 
-    # out_time = end of the last bin (exclusive)
-    runs["out_time"] = runs["last_bin"] + BIN_TD
+        seen_pairs = set()
+        for i, nbrs in enumerate(neighbors):
+            # nbrs includes i itself
+            for j in nbrs:
+                if j <= i:
+                    continue
+                key = _pair_key(int(mmsis[i]), int(mmsis[j]))
+                seen_pairs.add(key)
 
-    runs = runs.rename(columns={"mmsi_1": "mmsi1", "mmsi_2": "mmsi2"})
-    return runs[["mmsi1", "mmsi2", "start_time", "out_time"]].sort_values(
-        ["start_time", "mmsi1", "mmsi2"]
-    ).reset_index(drop=True)
+        # Update active runs with seen pairs
+        # 1) continue / start pairs we see at time t
+        for key in seen_pairs:
+            if key in active:
+                start_t, last_t = active[key]
+                # if time is continuous, extend; else close and restart
+                if (t - last_t) <= cont_tol:
+                    active[key] = (start_t, t)
+                else:
+                    # finalize old run
+                    if (last_t - start_t) >= MIN_DURATION:
+                        results.append((key[0], key[1], start_t, last_t))
+                    active[key] = (t, t)
+            else:
+                active[key] = (t, t)
 
+        # 2) finalize pairs not seen at time t (they ended before t)
+        # We don't instantly close them here, because they might just be missing due to interpolation dropouts.
+        # But if they don't show up again, they'll be closed at the end anyway.
+        # If you want stricter closure, uncomment below:
+        #
+        # missing = [k for k in active.keys() if k not in seen_pairs and (t - active[k][1]) > cont_tol]
+        # for k in missing:
+        #     start_t, last_t = active.pop(k)
+        #     if (last_t - start_t) >= MIN_DURATION:
+        #         results.append((k[0], k[1], start_t, last_t))
+
+    # Finalize remaining active runs
+    for key, (start_t, last_t) in active.items():
+        if (last_t - start_t) >= MIN_DURATION:
+            results.append((key[0], key[1], start_t, last_t))
+
+    if not results:
+        return pd.DataFrame(columns=["mmsi1", "mmsi2", "start_time", "out_time"])
+
+    out = pd.DataFrame(results, columns=["mmsi1", "mmsi2", "start_time", "out_time"])
+    out = out.sort_values(["start_time", "mmsi1", "mmsi2"]).drop_duplicates(ignore_index=True)
+    return out
 
 # -----------------------------
-# MAIN
+# Main: loop tiles
 # -----------------------------
 def main():
-    lat_edges = np.linspace(REGION_LAT_MIN, REGION_LAT_MAX, N_LAT_TILES + 1)
-    lon_edges = np.linspace(REGION_LON_MIN, REGION_LON_MAX, N_LON_TILES + 1)
+    lat_range = np.linspace(REGION_LAT, 90, N_TILES_LAT)
+    lon_range = np.linspace(REGION_LON_WEST, REGION_LON_EAST, N_TILES_LON)
 
-    all_pairs_global = []
+    all_hits = []
 
-    for i in range(N_LON_TILES):
-        lon_min, lon_max = float(lon_edges[i]), float(lon_edges[i + 1])
-        for j in range(N_LAT_TILES):
-            lat_min, lat_max = float(lat_edges[j]), float(lat_edges[j + 1])
+    for i in range(len(lon_range) - 1):
+        for j in range(len(lat_range) - 1):
+            lon_min, lon_max = lon_range[i], lon_range[i + 1]
+            lat_min, lat_max = lat_range[j], lat_range[j + 1]
 
             table = pq.read_table(
                 AIS_PATH,
-                columns=["mmsi", "lat", "lon", "date_time_utc", "speed", "ship_type"],
+                columns=["mmsi", "lat", "lon", "date_time_utc"],
                 filters=[
-                    ("lat", ">=", lat_min), ("lat", "<", lat_max),
-                    ("lon", ">=", lon_min), ("lon", "<", lon_max),
-                    # Optional pruning:
-                    # ("speed", "<", MAX_SPEED_KTS),
-                    # ("ship_type", "==", FISHING_TYPE_CODE),
+                    ("lat", ">=", float(lat_min)),
+                    ("lat", "<",  float(lat_max)),
+                    ("lon", ">=", float(lon_min)),
+                    ("lon", "<",  float(lon_max)),
                 ],
             )
-
             df_tile = table.to_pandas()
+
             if df_tile.empty:
                 continue
 
-            df_tile["date_time_utc"] = pd.to_datetime(df_tile["date_time_utc"], utc=True, errors="coerce")
-            df_tile = df_tile.dropna(subset=["date_time_utc", "lat", "lon", "mmsi"])
-            if df_tile.empty:
-                continue
+            # Resample/interpolate per vessel
+            resampled = resample_vessels(df_tile)
 
-            df_tile["time_bin"] = df_tile["date_time_utc"].dt.floor(BIN)
+            # Find close intervals in this tile
+            hits = find_close_intervals(resampled)
+            if not hits.empty:
+                hits["tile_lon_min"] = lon_min
+                hits["tile_lon_max"] = lon_max
+                hits["tile_lat_min"] = lat_min
+                hits["tile_lat_max"] = lat_max
+                all_hits.append(hits)
 
-            # Build pairs for each time bin in this tile
-            tile_pairs = []
-            for tbin, g in df_tile.groupby("time_bin"):
-                pairs_df = pairs_in_bin(g)
-                if not pairs_df.empty:
-                    tile_pairs.append(pairs_df)
+            print(
+                f"Tile lon[{lon_min:.2f},{lon_max:.2f}) lat[{lat_min:.2f},{lat_max:.2f}) "
+                f"raw={len(df_tile):,} resampled={len(resampled):,} hits={len(hits):,}"
+            )
 
-            if tile_pairs:
-                all_pairs_global.append(pd.concat(tile_pairs, ignore_index=True))
+    if not all_hits:
+        print("No close intervals found.")
+        return
 
-    pairs_all = (
-        pd.concat(all_pairs_global, ignore_index=True)
-        if all_pairs_global
-        else pd.DataFrame(columns=["time_bin", "mmsi_1", "mmsi_2"])
-    )
+    out = pd.concat(all_hits, ignore_index=True)
 
-    events = stitch_runs(pairs_all)
+    # Keep only the requested columns (drop tile info if you want)
+    out_simple = out[["mmsi1", "mmsi2", "start_time", "out_time"]].copy()
 
-    # Output
-    print(events)
-    # Save if you want:
-    events.to_csv("close_pairs_10min.csv", index=False)
-    print("\nSaved:", "close_pairs_10min.csv")
+    # Optional: if the same event appears in overlapping tiles, you can dedupe more aggressively here.
+    out_simple = out_simple.sort_values(["start_time", "mmsi1", "mmsi2"]).drop_duplicates(ignore_index=True)
 
+    out_simple.to_csv("close_pairs_intervals.csv", index=False)
+    print(f"\nSaved: close_pairs_intervals.csv  (rows={len(out_simple):,})")
 
 if __name__ == "__main__":
     main()
-
-# only gave like 4 cases of sts, needs to be examined further.

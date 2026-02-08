@@ -2,7 +2,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
 
-cases_df = pd.read_csv("close_pairs_10min.csv")
+cases_df = pd.read_csv("close_pairs_intervals.csv")
 cases_df["start_time"] = pd.to_datetime(cases_df["start_time"])
 cases_df["out_time"] = pd.to_datetime(cases_df["out_time"])
 

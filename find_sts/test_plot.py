@@ -2,9 +2,9 @@ import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
 import pandas as pd
 
-AIS_PATH = "../Data/AIS/whole_month/01clean.parquet"
+AIS_PATH = "../Data/AIS/whole_month/01clean2.parquet"
 
-test_mmsis = [231009000, 231010000]
+test_mmsis = [220507000, 245265000]
 
 table = pq.read_table(
     AIS_PATH,
@@ -15,8 +15,8 @@ table = pq.read_table(
 df_ais = table.to_pandas()
 df_ais["date_time_utc"] = pd.to_datetime(df_ais["date_time_utc"])
 
-start_time = pd.Timestamp("2024-01-17 03:00:00")
-end_time = pd.Timestamp("2024-01-17 04:00:00")
+start_time = pd.Timestamp("2024-01-10 22:00:00")
+end_time = pd.Timestamp("2024-01-11 05:00:00")
 
 df_ais = df_ais.loc[df_ais["date_time_utc"].between(start_time, end_time)]
 print(df_ais)

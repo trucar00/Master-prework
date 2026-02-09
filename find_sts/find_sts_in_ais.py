@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import BallTree
 import math
 
-AIS_PATH = "../Data/AIS/whole_month/01clean.parquet"
+AIS_PATH = "../Data/AIS/whole_month/01clean2.parquet"
 
 REGION_LAT = 55 # We want all vessels north of 62 degrees north
 REGION_LON_EAST = 45
@@ -194,5 +194,5 @@ for i in range(len(lon_range)-1):
 
         
 # Notes
-# Remove stationary doesnt work perfectly
+# Remove stationary doesnt work perfectly, think this works now
 # Finds cases where dist < 50, need to find consecutive 

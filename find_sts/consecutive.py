@@ -2,9 +2,12 @@ import pandas as pd
 import numpy as np
 
 
-path = "../Data/close_pairs2.csv"
+path = "../Data/close_pairs.csv"
 
 df = pd.read_csv(path)
+
+df = df[df["callsign1"] != "JXVS"]
+
 df["time_stamp"] = pd.to_datetime(df["time_stamp"])
 df = df[(df["speed1"] > 0.25) & (df["speed2"] > 0.25)].copy()
 
@@ -23,6 +26,8 @@ df["run_id"] = df.groupby(["mmsi1", "mmsi2"])["is_consecutive"] \
 runs = (
     df.groupby(["mmsi1", "mmsi2", "run_id"])
       .agg(
+          callsign1=("callsign1", "first"),
+          callsign2=("callsign2", "first"),
           start_time=("time_stamp", "min"),
           end_time=("time_stamp", "max"),
           n_points=("time_stamp", "size"),
@@ -35,6 +40,6 @@ runs = runs[runs["n_points"] >= 2]
 runs = runs.sort_values(by="n_points", ascending=False)
 
 print(runs.head())
-print("Number of streaks:", len(runs))
+print("Number of sts-cases found:", len(runs))
 
 runs.to_csv("consecutive.csv", index=False)

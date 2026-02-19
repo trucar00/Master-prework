@@ -188,12 +188,16 @@ for i in range(len(lon_range)-1):
                             dm2 = d_time.loc[d_time["mmsi"] == m2].copy()
                             lon1, lat1 = dm1["lon"].iloc[0], dm1["lat"].iloc[0]
                             lon2, lat2 = dm2["lon"].iloc[0], dm2["lat"].iloc[0]
+                            callsign1 = dm1["callsign"].iloc[0]
+                            callsign2 = dm2["callsign"].iloc[0]
                             speed1 = dm1["speed"].mean()
                             speed2 = dm2["speed"].mean()
                             dist = haversine(lat1, lon1, lat2, lon2)
                             append_dict = {
                                 "mmsi1": m1,
                                 "mmsi2": m2,
+                                "callsign1": callsign1,
+                                "callsign2": callsign2,
                                 "time_stamp": time_stamp,
                                 "lon1": lon1,
                                 "lat1": lat1,

@@ -10,9 +10,11 @@ df_ers = pd.read_csv("Data/elektronisk-rapportering-ers-2024-fangstmelding-dca.c
 df_ers = df_ers.dropna(subset=["Radiokallesignal (ERS)", "Pumpet fra fartøy", "Meldingstidspunkt", "Starttidspunkt", "Stopptidspunkt", "Varighet"])
 
 df_ers = df_ers.drop_duplicates(
-    subset=["Radiokallesignal (ERS)", "Pumpet fra fartøy"],
+    subset=["Radiokallesignal (ERS)", "Pumpet fra fartøy", "Starttidspunkt", "Stopptidspunkt"],
     keep="first"   # keeps the first occurrence
 )
+
+print(df_ers.shape)
 
 fmt = "%d.%m.%Y %H:%M:%S"
 df_ers["Meldingstidspunkt"] = pd.to_datetime(df_ers["Meldingstidspunkt"], format=fmt)
@@ -35,7 +37,7 @@ sts_callsigns = receiver_vessels + giving_vessels
 #print(sts_callsigns)
 
 table = pq.read_table(
-    "Data/AIS/whole_month/01.parquet",
+    "Data/AIS/whole_month/01clean2.parquet",
     columns=["mmsi", "callsign", "date_time_utc", "lon", "lat"],
     filters=[("callsign", "in", sts_callsigns)]
 )

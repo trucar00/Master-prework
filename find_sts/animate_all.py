@@ -77,7 +77,7 @@ def animate_sts_with_distance(d_rec, d_giv, title="", step="2min",
         dist_text.set_text(dist_str)
         return rec_line, giv_line, rec_pt, giv_pt, time_text, dist_text
 
-    anim = FuncAnimation(fig, update, frames=len(times), interval=50, blit=True)
+    anim = FuncAnimation(fig, update, frames=len(times), interval=50, blit=True) # change interval for animation speed
     os.makedirs(save_dir, exist_ok=True)
 
     def on_key(event):
@@ -96,9 +96,6 @@ def animate_sts_with_distance(d_rec, d_giv, title="", step="2min",
 # --- simplified main ---
 CONS_PATH = "consecutive.csv"
 AIS_PATH = "../Data/AIS/whole_month/01clean2.parquet"
-
-start_time = pd.Timestamp("2024-01-09 17:00:00")
-end_time = pd.Timestamp("2024-01-09 20:00:00")
 
 consecutive_df = pd.read_csv(CONS_PATH)
 plot_mmsis = list(consecutive_df["mmsi1"]) + list(consecutive_df["mmsi2"])
@@ -134,4 +131,4 @@ for r in consecutive_df.itertuples(index=False):
         close_threshold_m=50  # optional, set None to disable
     )   
 
-print(callsigns)
+#print(list(set(callsigns)))

@@ -14,9 +14,7 @@ df_sts["pair"] = df_sts.apply(
     axis=1
 )
 
-print(df_sts.head())
-
-df_ers = pd.read_csv("../Data/elektronisk-rapportering-ers-2024-fangstmelding-dca.csv", sep=";", 
+df_ers = pd.read_csv("../Data/elektronisk-rapportering-ers-2024-fangstmelding-dca.csv", sep=";", engine="python",
                      encoding="utf-8", decimal=",", usecols=["Meldingstidspunkt", "Radiokallesignal (ERS)", 
                                                              "Fartøynavn (ERS)", "Pumpet fra fartøy", "Starttidspunkt", 
                                                              "Stopptidspunkt", "Aktivitet", "Varighet"])
@@ -28,6 +26,12 @@ df_ers = df_ers.drop_duplicates(
     keep="first"   # keeps the first occurrence
 )
 
+fmt = "%d.%m.%Y %H:%M:%S"
+df_ers["Starttidspunkt"] = pd.to_datetime(df_ers["Starttidspunkt"], format=fmt)
+
+df_ers = df_ers.loc[df_ers["Starttidspunkt"].between("2024-01-01", "2024-01-31 23:59:59")]
+
+print(df_ers.shape)
 
 df_ers["Radiokallesignal (ERS)"] = (
     df_ers["Radiokallesignal (ERS)"]
@@ -48,24 +52,17 @@ df_ers["pair"] = df_ers.apply(
     axis=1
 )
 
+df_ers.to_csv("sts_in_ers_jan.csv", index=False)
+
 ers_pairs = set(df_ers["pair"])
 
 matches = df_sts[df_sts["pair"].isin(ers_pairs)]
-
+matches = matches.drop(columns=["run_id"])
+print(matches.head())
 print("Matched pairs:")
-print(matches[["callsign1", "callsign2", "start_time", "end_time"]])
+matches.to_csv("match_ais_ers_jan.csv", index=False)
 print("Number of matches:", len(matches))
 
 
-# df_ers = df_ers[
-#     df_ers["Radiokallesignal (ERS)"].isin(callsigns) |
-#     df_ers["Pumpet fra fartøy"].isin(callsigns)
-# ]
-
-
-
-#df_ers.to_csv("sts_in_ais_and_registered.csv", index=False)
-
-#print("Remaining rows:", len(df_ers))
-#print("Unique callsigns:", df_ers["Radiokallesignal (ERS)"].unique())
+# Plot STS cases that i didnt find in ais
 

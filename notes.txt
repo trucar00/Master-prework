@@ -25,3 +25,7 @@ Could filter out vessels under 15 meters, as they are not required to use AIS
 
 Datasets from fisdir:
 https://www.fiskeridir.no/statistikk-tall-og-analyse/data-og-statistikk-om-yrkesfiske/apne-data-elektronisk-rapportering-ers
+
+STS cases:
+Divides the ROI into a grid. (Bad for edge cases). Resample all vessels inside the grid so they have the same timeframe (every 10 min). 
+Check if some vessels are close at the same timestamp. Of these vessels, who are close for two or more consecutive timestamps. 

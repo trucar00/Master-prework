@@ -221,4 +221,4 @@ df_close_pairs.to_csv("close_pairs.csv", index=False)
 # Notes
 # Remove stationary doesnt work perfectly, think this works now
 # Finds cases where dist < 50, need to find consecutive 
-# interpolates over removed stationary parts of trajectories
+# Interpolates over removed stationary parts of trajectories -> fixed i think but take a look

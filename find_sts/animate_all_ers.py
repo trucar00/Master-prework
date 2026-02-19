@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import os
-import ast
 
 # --- your functions (unchanged) ---
 def haversine_m(lon1, lat1, lon2, lat2):
@@ -96,58 +95,91 @@ def animate_sts_with_distance(d_rec, d_giv, title="", step="2min",
 
 # --- simplified main ---
 CONS_PATH = "consecutive.csv"
-MATCH_PATH = "match_ais_ers_jan.csv"
+ERS_PATH = "../Data/elektronisk-rapportering-ers-2024-fangstmelding-dca.csv"
 AIS_PATH = "../Data/AIS/whole_month/01clean2.parquet"
 
-consecutive_df = pd.read_csv(CONS_PATH)
-match_df = pd.read_csv(MATCH_PATH)
-print(match_df)
+df_sts = pd.read_csv(CONS_PATH)
 
-consecutive_df["pair"] = consecutive_df.apply(
+df_sts["pair"] = df_sts.apply(
     lambda r: tuple(sorted([r["callsign1"], r["callsign2"]])),
     axis=1
 )
 
-match_df["pair"] = match_df["pair"].apply(ast.literal_eval)
-match_pairs = set(match_df["pair"])
-consecutive_df["in_ers"] = consecutive_df["pair"].isin(match_pairs)
-print(consecutive_df.head())
+df_ers = pd.read_csv(ERS_PATH, sep=";", engine="python",
+                     encoding="utf-8", decimal=",", usecols=["Meldingstidspunkt", "Radiokallesignal (ERS)", 
+                                                             "Fartøynavn (ERS)", "Pumpet fra fartøy", "Starttidspunkt", 
+                                                             "Stopptidspunkt", "Aktivitet", "Varighet"])
 
-plot_mmsis = list(consecutive_df["mmsi1"]) + list(consecutive_df["mmsi2"])
+df_ers = df_ers.dropna(subset=["Radiokallesignal (ERS)", "Pumpet fra fartøy", "Starttidspunkt", "Stopptidspunkt"])
+
+df_ers = df_ers.drop_duplicates(
+    subset=["Radiokallesignal (ERS)", "Pumpet fra fartøy", "Starttidspunkt", "Stopptidspunkt"],
+    keep="first"   # keeps the first occurrence
+)
+
+fmt = "%d.%m.%Y %H:%M:%S"
+df_ers["Starttidspunkt"] = pd.to_datetime(df_ers["Starttidspunkt"], format=fmt)
+df_ers["Stopptidspunkt"] = pd.to_datetime(df_ers["Stopptidspunkt"], format=fmt)
+
+df_ers = df_ers.loc[df_ers["Starttidspunkt"].between("2024-01-01", "2024-01-31 23:59:59")]
+
+# Between !!!
+
+print(df_ers.shape)
+
+df_ers["Radiokallesignal (ERS)"] = (
+    df_ers["Radiokallesignal (ERS)"]
+    .astype("string")
+    .str.strip()
+    .str.upper()
+)
+
+df_ers["Pumpet fra fartøy"] = (
+    df_ers["Pumpet fra fartøy"]
+    .astype("string")
+    .str.strip()
+    .str.upper()
+)
+
+df_ers["pair"] = df_ers.apply(
+    lambda r: tuple(sorted([r["Radiokallesignal (ERS)"], r["Pumpet fra fartøy"]])),
+    axis=1
+)
+
+sts_pairs = set(df_sts["pair"])
+
+df_ers = df_ers[~df_ers["pair"].isin(sts_pairs)]
+
+plot_callsigns = list(df_ers["Radiokallesignal (ERS)"].unique()) + list(df_ers["Pumpet fra fartøy"].unique())
+
+df_ers = df_ers.rename(columns={"Radiokallesignal (ERS)": "callsign1", "Pumpet fra fartøy": "callsign2"})
 
 # read only those two MMSIs
 table = pq.read_table(
     AIS_PATH,
     columns=["mmsi", "callsign", "date_time_utc", "lon", "lat", "speed"],
-    filters=[("mmsi", "in", plot_mmsis)]
+    filters=[("callsign", "in", plot_callsigns)]
 )
 df = table.to_pandas()
 df["date_time_utc"] = pd.to_datetime(df["date_time_utc"])
 
 callsigns = []
 
-cnt = 0
-for r in consecutive_df.itertuples(index=False):
+for r in df_ers.itertuples(index=False):
     buf = pd.Timedelta(hours=1)
-    start_time = pd.to_datetime(r.start_time) - buf
-    end_time = pd.to_datetime(r.end_time) + buf
+    start_time = r.Starttidspunkt - buf
+    end_time = r.Stopptidspunkt + buf
     df_plot = df.loc[df["date_time_utc"].between(start_time, end_time)].copy()
-    a = df_plot[df_plot["mmsi"] == r.mmsi1].copy()
-    b = df_plot[df_plot["mmsi"] == r.mmsi2].copy()
-    callsign1 = a["callsign"].iloc[0]
-    callsign2 = b["callsign"].iloc[0]
-    callsigns.append(callsign1)
-    callsigns.append(callsign2)
-    print(f"{callsign1} and {callsign2} between {start_time} and {end_time} with {r.n_points} consecutive points.")
-    
+    a = df_plot[df_plot["callsign"] == r.callsign1].copy()
+    b = df_plot[df_plot["callsign"] == r.callsign2].copy()
+
+    print(f"{r.callsign1} and {r.callsign2} between {start_time} and {end_time}.")
+
     animate_sts_with_distance(
         a, b,
-        title=f"{callsign1} vs {callsign2} | {start_time}–{end_time}. Registered: {r.in_ers}",
+        title=f"{r.callsign1} vs {r.callsign2} | {start_time}–{end_time}",
         step="2min",
         close_threshold_m=50  # optional, set None to disable
-    )
+    )   
 
 #print(list(set(callsigns)))
-
-# report if not in ers, investigate these plots
-# 9 of the 22 consecutive messages within 50 m of each other we can find in the ers data as a overpumping av fisk. 

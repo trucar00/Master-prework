@@ -3,7 +3,7 @@ import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
 
 
-df_ers = pd.read_csv("Data/elektronisk-rapportering-ers-2024-fangstmelding-dca.csv", sep=";", encoding="utf-8", decimal=",", 
+df_ers = pd.read_csv("Data/elektronisk-rapportering-ers-2024-fangstmelding-dca.csv", sep=";", encoding="utf-8", decimal=",", engine="python",
                  usecols=["Meldingstidspunkt", "Radiokallesignal (ERS)", "Fartøynavn (ERS)", "Pumpet fra fartøy", 
                           "Starttidspunkt", "Stopptidspunkt", "Startposisjon bredde", "Startposisjon lengde", "Aktivitet", "Varighet"])
 

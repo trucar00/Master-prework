@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import BallTree
 import math
 
+
 AIS_PATH = "../Data/AIS/whole_month/01clean2.parquet"
 
 REGION_LAT = 55 # We want all vessels north of 62 degrees north
@@ -31,29 +32,65 @@ def downsample(df, step="10min"):
     df = df.set_index("date_time_utc")
     #print(df.head())
 
-    def resample_and_interpolate(g):
-        # Resample regularly
+    def resample_and_interpolate(g, step="10min", max_gap=pd.Timedelta("15min")):
+        g = g.sort_index()
+
+        # IMPORTANT: make index unique (AIS often has duplicates)
+        if not g.index.is_unique:
+            num_cols = g.select_dtypes(include="number").columns
+            other_cols = [c for c in g.columns if c not in num_cols]
+
+            g_num = g[num_cols].groupby(level=0).mean()
+            g_other = g[other_cols].groupby(level=0).first()
+            g = pd.concat([g_num, g_other], axis=1).sort_index()
+
         t0, t1 = g.index.min(), g.index.max()
-        g_res = g.resample(step, origin="start_day").first()
 
-        # Interpolate only numeric columns (lon, lat, speed, etc.)
+        # regular grid
+        grid = pd.date_range(t0.floor(step), t1.ceil(step), freq=step)
+
+        # union index (now safe because g.index is unique)
+        g_res = g.reindex(g.index.union(grid)).sort_index()
+
+        # mark real observations (before interpolation)
+        is_obs = g_res["lon"].notna() & g_res["lat"].notna()
+
+        # interpolate numeric columns by time
         num_cols = g_res.select_dtypes(include="number").columns
-        g_res[num_cols] = g_res[num_cols].interpolate(method="linear", limit_area="inside")
+        g_res[num_cols] = g_res[num_cols].interpolate(method="time", limit_area="inside")
 
+        # blank out interpolation inside big gaps between consecutive observations
+        obs_times = g_res.index[is_obs]
+        if len(obs_times) >= 2:
+            gaps = obs_times.to_series().diff()
+            big_starts = obs_times[1:][gaps.iloc[1:].values > max_gap]
+
+            for t_start in big_starts:
+                t_prev = obs_times[obs_times.get_loc(t_start) - 1]
+                mask = (g_res.index > t_prev) & (g_res.index < t_start)
+                g_res.loc[mask, num_cols] = np.nan
+
+        # keep only grid timestamps inside original span
+        g_res = g_res.loc[g_res.index.isin(grid)]
         g_res = g_res.loc[(g_res.index >= t0) & (g_res.index <= t1)]
-        # Fill remaining NaNs (like mmsi, ship_name) via forward/backward fill
-        g_res[["callsign", "day"]] = g_res[["callsign", "day"]].ffill().bfill()
-        #print(g_res.head())
+
+        # fill non-numeric (safe even if callsign missing)
+        for col in ["callsign", "day"]:
+            if col in g_res.columns:
+                g_res[col] = g_res[col].ffill().bfill().infer_objects(copy=False)
+
         return g_res
+
 
     resampled_parts = []
 
     for mmsi_val, g in df.groupby("mmsi", sort=False):
-        g_res = resample_and_interpolate(g)
+        g_res = resample_and_interpolate(g, step=step, max_gap=MAX_INTERP_GAP)
         g_res["mmsi"] = mmsi_val
         resampled_parts.append(g_res)
 
     resampled = pd.concat(resampled_parts)
+    resampled.index.name = "date_time_utc"
     resampled = resampled.reset_index()   # creates resampled["date_time_utc"]
 
     return resampled
@@ -105,6 +142,7 @@ def pairs_within_radius(d_time, r_rad=RADIUS_RAD):
     return pairs
 
 
+close_pairs = []
 for i in range(len(lon_range)-1):
     for j in range(len(lat_range)-1):
 
@@ -144,55 +182,39 @@ for i in range(len(lon_range)-1):
                     if pairs:
                         #print(time_stamp, "pairs:", len(pairs))
                         # print a few
+                        #print(pairs)
                         for k, (m1, m2) in enumerate(sorted(pairs)):
                             dm1 = d_time.loc[d_time["mmsi"] == m1].copy()
                             dm2 = d_time.loc[d_time["mmsi"] == m2].copy()
                             lon1, lat1 = dm1["lon"].iloc[0], dm1["lat"].iloc[0]
                             lon2, lat2 = dm2["lon"].iloc[0], dm2["lat"].iloc[0]
-                            speed1 = dm1["speed"].iloc[0]
-                            speed2 = dm2["speed"].iloc[0]
+                            speed1 = dm1["speed"].mean()
+                            speed2 = dm2["speed"].mean()
                             dist = haversine(lat1, lon1, lat2, lon2)
-                            print(f"Distance between {m1} and {m2} at time {time_stamp}: {dist:.2f}, speed: {speed1}, {speed2}")
+                            append_dict = {
+                                "mmsi1": m1,
+                                "mmsi2": m2,
+                                "time_stamp": time_stamp,
+                                "lon1": lon1,
+                                "lat1": lat1,
+                                "lon2": lon2,
+                                "lat2": lat2,
+                                "distance": dist,
+                                "speed1": speed1,
+                                "speed2": speed2
+                            }
+                            close_pairs.append(append_dict)
+                            #print(f"Distance between {m1} and {m2} at time {time_stamp}: {dist:.2f}, speed: {speed1}, {speed2}")
 
-                            if k >= 5:
-                                break
                             #print(" ", m1, m2)
 
-                    """ if d_time.shape[0] > 1:
-                        lon0, lat0 = d_time.iloc[0]["lon"], d_time.iloc[0]["lat"]
-                        lon1, lat1 = d_time.iloc[1]["lon"], d_time.iloc[1]["lat"]
-                        dist = haversine(lat1=lat0, lon1=lon0, lat2=lat1, lon2=lon1)
-                        print(f"Distance between {d_time.iloc[0]["mmsi"]} and {d_time.iloc[1]["mmsi"]} at time {time_stamp}: {dist:.2f}")
-                    else:
-                        print("Not big enough") """
 
+df_close_pairs = pd.DataFrame(close_pairs)
+dups = df_resampled.duplicated(subset=["mmsi", "date_time_utc"]).sum()
+print("duplicates (mmsi,time) in df_resampled:", dups)
 
-
-                """ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8), sharex=True, sharey=True)
-
-                # --- Original AIS points ---
-                for mmsi, d in df_day.groupby("mmsi"):
-                    d["date_time_utc"] = pd.to_datetime(d["date_time_utc"])
-                    d = d.sort_values("date_time_utc")
-                    ax1.scatter(d["lon"], d["lat"], linewidth=0.7, alpha=0.7)
-
-                ax1.set_title(f"Original AIS, day: {day}")
-                ax1.set_xlabel("Longitude")
-                ax1.set_ylabel("Latitude")
-
-                # --- Resampled AIS ---
-                for mmsi, d in df_resampled.groupby("mmsi"):
-                    d["date_time_utc"] = pd.to_datetime(d["date_time_utc"])
-                    d = d.sort_values("date_time_utc")
-                    ax2.scatter(d["lon"], d["lat"], linewidth=0.7, alpha=0.7)
-
-                ax2.set_title(f"Resampled AIS, day: {day}")
-                ax2.set_xlabel("Longitude")
-
-                plt.tight_layout()
-                plt.show() """
-
-        
+df_close_pairs.to_csv("close_pairs.csv", index=False)  
 # Notes
 # Remove stationary doesnt work perfectly, think this works now
 # Finds cases where dist < 50, need to find consecutive 
+# interpolates over removed stationary parts of trajectories

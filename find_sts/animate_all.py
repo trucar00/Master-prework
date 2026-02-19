@@ -1,6 +1,9 @@
 import pandas as pd
 import pyarrow.parquet as pq
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import os
 
 # --- your functions (unchanged) ---
 def haversine_m(lon1, lat1, lon2, lat2):
@@ -13,9 +16,6 @@ def haversine_m(lon1, lat1, lon2, lat2):
     c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
     return R * c
 
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-import os
 
 def animate_sts_with_distance(d_rec, d_giv, title="", step="2min",
                               close_threshold_m=None, save_dir="saved_sts",
@@ -94,43 +94,44 @@ def animate_sts_with_distance(d_rec, d_giv, title="", step="2min",
     plt.show()
 
 # --- simplified main ---
+CONS_PATH = "consecutive.csv"
 AIS_PATH = "../Data/AIS/whole_month/01clean2.parquet"
 
-plot_mmsis = [257214000, 257584600]  # exactly two MMSIs
 start_time = pd.Timestamp("2024-01-09 17:00:00")
 end_time = pd.Timestamp("2024-01-09 20:00:00")
 
+consecutive_df = pd.read_csv(CONS_PATH)
+plot_mmsis = list(consecutive_df["mmsi1"]) + list(consecutive_df["mmsi2"])
 
 # read only those two MMSIs
 table = pq.read_table(
     AIS_PATH,
-    columns=["mmsi", "callsign", "date_time_utc", "lon", "lat"],
+    columns=["mmsi", "callsign", "date_time_utc", "lon", "lat", "speed"],
     filters=[("mmsi", "in", plot_mmsis)]
 )
 df = table.to_pandas()
 df["date_time_utc"] = pd.to_datetime(df["date_time_utc"])
 
+callsigns = []
 
+for r in consecutive_df.itertuples(index=False):
+    buf = pd.Timedelta(hours=1)
+    start_time = pd.to_datetime(r.start_time) - buf
+    end_time = pd.to_datetime(r.end_time) + buf
+    df_plot = df.loc[df["date_time_utc"].between(start_time, end_time)].copy()
+    a = df_plot[df_plot["mmsi"] == r.mmsi1].copy()
+    b = df_plot[df_plot["mmsi"] == r.mmsi2].copy()
+    callsign1 = a["callsign"].iloc[0]
+    callsign2 = b["callsign"].iloc[0]
+    callsigns.append(callsign1)
+    callsigns.append(callsign2)
+    print(f"{callsign1} and {callsign2} between {start_time} and {end_time} with {r.n_points} consecutive points.")
 
-# cut to your desired window
-start_time = pd.to_datetime(start_time)
-end_time = pd.to_datetime(end_time)
-df = df.loc[df["date_time_utc"].between(start_time, end_time)].copy()
+    animate_sts_with_distance(
+        a, b,
+        title=f"{callsign1} vs {callsign2} | {start_time}–{end_time}",
+        step="2min",
+        close_threshold_m=50  # optional, set None to disable
+    )   
 
-# split per MMSI
-a = df[df["mmsi"] == plot_mmsis[0]].copy()
-b = df[df["mmsi"] == plot_mmsis[1]].copy()
-
-print("A points:", len(a), "B points:", len(b))
-
-callsign1 = a["callsign"].iloc[0]
-callsign2 = b["callsign"].iloc[0]
-
-print("MMSI 1 points:", len(a), " | MMSI 2 points:", len(b))
-
-animate_sts_with_distance(
-    a, b,
-    title=f"{callsign1} vs {callsign2} | {start_time}–{end_time}",
-    step="2min",
-    close_threshold_m=50  # optional, set None to disable
-)
+print(callsigns)

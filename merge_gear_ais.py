@@ -2,7 +2,7 @@ import pandas as pd
 
 # IMPROVEMENT: Should merge also on a month condition, siste fangstdato e.l.
 
-ais_df = pd.read_parquet("Data/01-10-15.parquet", engine="pyarrow")
+ais_df = pd.read_parquet("Data/AIS/01-10-15.parquet", engine="pyarrow")
 gear_df = pd.read_csv("Data/fangstdata_2024_dropped.csv")
 
 ais_df["date_time_utc"] = pd.to_datetime(ais_df["date_time_utc"])

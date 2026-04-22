@@ -1,6 +1,7 @@
 import pandas as pd
 
 ers_df = pd.read_csv("Data/elektronisk-rapportering-ers-2024-fangstmelding-dca.csv", sep=";", encoding="utf-8", decimal=",")
+print(ers_df.dtypes)
 
 ers_df = ers_df[["Fartøynavn (ERS)", "Meldingstidspunkt", "Radiokallesignal (ERS)", "Aktivitet", "Starttidspunkt",
                  "Stopptidspunkt", "Varighet", "Startposisjon bredde", "Startposisjon lengde", "Stopposisjon bredde", 
@@ -15,4 +16,4 @@ after = len(ers_df)
 
 print(f"Dropped {before - after} rows ({(before-after)/before:.1%})")
 
-ers_df.to_csv("Data/ers-fangstmelding-nonan.csv")
+ers_df.to_csv("Data/ers-fangstmelding-nonan.csv", index=False)

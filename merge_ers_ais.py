@@ -12,7 +12,7 @@ fmt = "%d.%m.%Y %H:%M:%S"
 df_ers["Starttidspunkt"] = pd.to_datetime(df_ers["Starttidspunkt"], format=fmt)
 df_ers["Stopptidspunkt"] = pd.to_datetime(df_ers["Stopptidspunkt"], format=fmt)
 
-df_ers = df_ers.loc[df_ers["Starttidspunkt"].between("2024-01-01", "2024-01-05 23:59:59")]
+df_ers = df_ers.loc[df_ers["Starttidspunkt"].between("2024-01-01", "2024-01-5 23:59:59")]
 
 df_ers["Radiokallesignal (ERS)"] = df_ers["Radiokallesignal (ERS)"].astype("string").str.strip().str.upper()
 df_ers["Redskap - gruppe"] = df_ers["Redskap - gruppe"].astype("string").str.strip()

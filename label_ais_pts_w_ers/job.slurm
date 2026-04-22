@@ -10,7 +10,7 @@
 #SBATCH --mail-type=ALL
 
 # Go to submission folder
-cd ~/Test/IDUN
+cd ~/Label-ais-ers/Master-prework/label_ais_pts_w_ers
 
 # Load Python
 module purge

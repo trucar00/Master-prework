@@ -136,5 +136,5 @@ def main():
 
 
 if __name__ == "__main__":
-    #main()
-    local_main()
+    main()
+    #local_main()

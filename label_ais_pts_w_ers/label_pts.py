@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import pyarrow.parquet as pq
-from tqdm import tqdm
+#from tqdm import tqdm
 
 GEAR_TYPES = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn"]
 
@@ -13,7 +13,7 @@ DURATION_LIMITS = {
     "Garn": (150, 1250),
 }
 
-def get_ers(gear_types=GEAR_TYPES, path="Data/ers-fangstmelding-nonan.csv", activities=["I fiske"]):
+def get_ers(gear_types=GEAR_TYPES, path="ers-fangstmelding-nonan.csv", activities=["I fiske"]):
     df_ers = pd.read_csv(path)
 
     print(df_ers["Redskap - gruppe"].unique())
@@ -92,7 +92,7 @@ def assign_ais_message_to_label(df_ais, df_ers):
 
     labeled_parts = []
 
-    for callsign, d_ais in tqdm(df_ais.groupby("callsign", sort=False)):
+    for callsign, d_ais in df_ais.groupby("callsign", sort=False):
         d_ais = d_ais.sort_values("date_time_utc").copy()
         if callsign not in ers_groups:
             labeled_parts.append(d_ais)
@@ -111,11 +111,29 @@ def assign_ais_message_to_label(df_ais, df_ers):
     df_labeled = pd.concat(labeled_parts, ignore_index=True)
     return df_labeled
 
+
 df_ers = get_ers()
 registered_callsigns = get_registered_callsigns(df_ers)
 
 df_ais = read_ais_parquet(parquet_path="Data/AIS/whole_month2/01.parquet", callsigns=registered_callsigns)
 
+
 df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
 print(df_ais_with_labels.head())
 df_ais_with_labels.to_csv("ais_with_ers_labels.csv")
+
+def main():
+    df_ers = get_ers()
+    registered_callsigns = get_registered_callsigns(df_ers)
+
+    for month in range(1, 13):
+        filepath = f"~Test/IDUN/Processed_AIS_2024/Cleaned_pq/{month:02d}.parquet"
+
+        df_ais = read_ais_parquet(parquet_path=filepath, callsigns=registered_callsigns)
+
+        df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
+        df_ais_with_labels.to_csv(f"ais_with_ers_labels_{month:02d}.csv")
+
+
+if __name__ == "__main__":
+    main()

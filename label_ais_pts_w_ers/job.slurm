@@ -4,7 +4,7 @@
 #SBATCH --time=1:00:00
 #SBATCH --nodes=1             # 1 compute nodes
 #SBATCH --cpus-per-task=32     # 2 CPU cores
-#SBATCH --mem=128G             # GB memory
+#SBATCH --mem=32G             # GB memory
 #SBATCH --output=output.txt    # Log file
 #SBATCH --mail-user=trulsc00@gmail.com
 #SBATCH --mail-type=ALL

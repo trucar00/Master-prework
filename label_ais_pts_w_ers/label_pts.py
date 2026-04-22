@@ -126,6 +126,15 @@ def main():
     df_ers = get_ers(ers_path="ers-fangstmelding-nonan.csv")
     registered_callsigns = get_registered_callsigns(df_ers)
 
+    df = pd.DataFrame({
+        "id": [1, 2, 3, 4],
+        "name": ["Alice", "Bob", "Charlie", "Diana"],
+        "age": [25, 30, 35, 28],
+        "score": [88.5, 92.3, 85.0, 90.1]
+    })
+
+    df.to_csv("~Test/TEST.csv")
+    
     for month in range(1, 13):
         filepath = f"~Test/IDUN/Processed_AIS_2024/Cleaned_pq/{month:02d}.parquet"
 

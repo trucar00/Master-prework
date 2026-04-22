@@ -127,7 +127,7 @@ def main():
     registered_callsigns = get_registered_callsigns(df_ers)
     
     for month in range(1, 13):
-        filepath = f"../../Test/IDUN/Processed_AIS_2024/Cleaned_pq/{month:02d}.parquet"
+        filepath = f"../../../Test/IDUN/Processed_AIS_2024/Cleaned_pq/{month:02d}.parquet"
 
         df_ais = read_ais_parquet(parquet_path=filepath, callsigns=registered_callsigns)
 
@@ -136,5 +136,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-    #local_main()
+    #main()
+    local_main()

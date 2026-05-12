@@ -24,7 +24,7 @@ ax.set_ylabel("Latitude")
 
 # --- Plot segment of latitude line at 62°N ---
 
-ax.plot([-10, -10, 45, 45], [88, 55, 55, 88], color="red", linewidth=1.2, label="Region")
+ax.plot([6.25, 6.25, 8.3, 8.3], [57.5, 55.25, 55.25, 57.5], color="red", linewidth=1.2, label="Region")
 
 # Optional: mark the endpoints
 

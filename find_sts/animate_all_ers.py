@@ -125,7 +125,7 @@ df_ers = df_ers.loc[df_ers["Starttidspunkt"].between("2024-01-01", "2024-01-31 2
 
 # Between !!!
 
-print(df_ers.shape)
+print("STS cases in ers: ", df_ers.shape)
 
 df_ers["Radiokallesignal (ERS)"] = (
     df_ers["Radiokallesignal (ERS)"]

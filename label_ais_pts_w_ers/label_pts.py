@@ -29,6 +29,11 @@ def get_ers(ers_path, gear_types=GEAR_TYPES, activities=["I fiske"]):
     )
     df_ers = df_ers.drop_duplicates(keep="first")
 
+    df_ers = df_ers[
+        df_ers["Starttidspunkt"].str.contains(" ", na=False) &
+        df_ers["Stopptidspunkt"].str.contains(" ", na=False)
+    ]
+
     fmt = "%d.%m.%Y %H:%M:%S"
     df_ers["Starttidspunkt"] = pd.to_datetime(df_ers["Starttidspunkt"], format=fmt)
     df_ers["Stopptidspunkt"] = pd.to_datetime(df_ers["Stopptidspunkt"], format=fmt)
@@ -125,7 +130,7 @@ def local_main():
 
 def main():
     for year in range(2022, 2024+1):
-        df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")
+        df_ers = get_ers(ers_path=f"Data/ers-fangstmelding-nonan-{year}.csv")
         registered_callsigns = get_registered_callsigns(df_ers)
 
         for month in range(1, 13):

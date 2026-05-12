@@ -13,11 +13,12 @@ df = pd.read_parquet("../Data/AIS/whole_month/01clean2.parquet", columns=["mmsi"
 plt.figure(figsize=(10,8))
 
 plt.hist2d(df["lon"], df["lat"], bins=400, cmap="hot", norm=colors.LogNorm())
-plt.colorbar(label="Number of AIS messages")
+plt.colorbar(label="Number of AIS messages", shrink=0.5)
 
 plt.xlabel("Longitude")
 plt.ylabel("Latitude")
 plt.title("Heatmap of AIS messages")
 plt.gca().set_aspect('equal', adjustable='box')
+plt.tight_layout()
 plt.show()
     

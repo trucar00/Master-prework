@@ -1,13 +1,13 @@
 import pandas as pd
 
-YEAR = "2023"
+YEAR = "2022"
 
 ers_df = pd.read_csv(f"Data/elektronisk-rapportering-ers-{YEAR}-fangstmelding-dca.csv", sep=";", encoding="utf-8", decimal=",")
 print(ers_df.dtypes)
 
 ers_df = ers_df[["Fartøynavn (ERS)", "Fartøynasjonalitet (kode)", "Meldingstidspunkt", "Radiokallesignal (ERS)", "Aktivitet", "Starttidspunkt",
                  "Stopptidspunkt", "Varighet", "Startposisjon bredde", "Startposisjon lengde", "Stopposisjon bredde", 
-                 "Stopposisjon lengde", "Hovedområde start (kode)", "Redskap - gruppe", "Hovedart FAO"]]
+                 "Stopposisjon lengde", "Hovedområde start (kode)", "Redskap - gruppe", "Redskap FAO","Redskap FDIR",  "Hovedart FAO"]]
 
 before = len(ers_df)
 ers_df = ers_df.dropna(subset=["Starttidspunkt", "Stopptidspunkt", "Redskap - gruppe", "Varighet"])

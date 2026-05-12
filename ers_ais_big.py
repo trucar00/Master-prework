@@ -25,7 +25,7 @@ df_ers["Redskap - gruppe"] = df_ers["Redskap - gruppe"].astype("string").str.str
 df_ers["start_pos"] = list(zip(df_ers["Startposisjon lengde"].astype(float), df_ers["Startposisjon bredde"].astype(float)))
 df_ers["end_pos"] = list(zip(df_ers["Stopposisjon lengde"].astype(float), df_ers["Stopposisjon bredde"].astype(float)))
 
-gear = "Krokredskap"
+gear = "Bur og ruser"
 
 gear_sets = (
     df_ers.groupby("Radiokallesignal (ERS)")["Redskap - gruppe"]

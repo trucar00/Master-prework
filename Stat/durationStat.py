@@ -36,7 +36,7 @@ df_ers["Redskap - gruppe"] = df_ers["Redskap - gruppe"].astype("string").str.str
 df_ers["Varighet"] = pd.to_numeric(df_ers["Varighet"], errors="coerce")
 df_ers = df_ers.loc[df_ers["Varighet"] < 2000].copy()
 
-gears = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn"]
+gears = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn", "Bur og ruser"]
 activity_flags = ["I fiske"]
 
 gear_translation = {
@@ -44,7 +44,8 @@ gear_translation = {
     "Not": "Purse seine",
     "Krokredskap": "Hook gear",
     "Snurrevad": "Danish seine",
-    "Garn": "Gillnet"
+    "Garn": "Gillnet",
+    "Bur og ruser": "Traps",
 }
 
 plt.figure()

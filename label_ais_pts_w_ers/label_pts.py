@@ -1,14 +1,15 @@
 import pandas as pd
 import pyarrow.parquet as pq
 
-GEAR_TYPES = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn"]
+GEAR_TYPES = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn", "Bur og ruser"]
 
 DURATION_LIMITS = {
     "Trål": (30, 500),
     "Not": (15, 250),
     "Snurrevad": (15, 250),
     "Krokredskap": (500, 1500),
-    "Garn": (150, 1250),
+    "Garn": (150, 1000),
+    "Bur og ruser": (15, 300)
 }
 
 def get_ers(ers_path, gear_types=GEAR_TYPES, activities=["I fiske"]):

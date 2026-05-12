@@ -2,10 +2,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pyarrow.parquet as pq 
 import seaborn as sns
+import numpy as np
 
-# READY TO SAVE GEAR SPECIFIC AIS DATA
+files = [
+    "Data/ers-fangstmelding-nonan-2023.csv",
+    "Data/ers-fangstmelding-nonan-2024.csv",
+    "Data/ers-fangstmelding-nonan-2025.csv"
+]
 
-df_ers = pd.read_csv("Data/ers-fangstmelding-nonan.csv")
+dfs = [pd.read_csv(f) for f in files]
+df_ers = pd.concat(dfs, ignore_index=True)
+
+df_ers = df_ers[
+    df_ers["Starttidspunkt"].str.contains(" ", na=False) &
+    df_ers["Stopptidspunkt"].str.contains(" ", na=False)
+]
 
 nr_callsigns_ers = df_ers["Radiokallesignal (ERS)"].nunique()
 
@@ -26,7 +37,15 @@ df_ers["Varighet"] = pd.to_numeric(df_ers["Varighet"], errors="coerce")
 df_ers = df_ers.loc[df_ers["Varighet"] < 2000].copy()
 
 gears = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn"]
-activity_flags = ["I fiske", "Setting av redskap"]
+activity_flags = ["I fiske"]
+
+gear_translation = {
+    "Trål": "Trawl",
+    "Not": "Purse seine",
+    "Krokredskap": "Hook gear",
+    "Snurrevad": "Danish seine",
+    "Garn": "Gillnet"
+}
 
 plt.figure()
 
@@ -39,11 +58,20 @@ for gear in gears:
 
     sns.kdeplot(
         reported_gear_fishing["Varighet"].dropna(),
-        label=gear,
-        clip=(0, None)
+        label=gear_translation[gear],
+        clip=(0, 1800),
+        linewidth=2.5
+        
     )
 
-plt.xlabel("Minutes")
-plt.title("Duration by gear type")
-plt.legend()
+plt.xlabel("Minutes", fontsize=14)
+plt.ylabel("Density", fontsize=14)
+#plt.title("Duration by gear type")
+plt.legend(fontsize=12)
+plt.xticks(np.arange(0, df_ers["Varighet"].max(), 250))
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+plt.tight_layout()
+plt.subplots_adjust(left=0.08)  # reduce left margin
+plt.xlim(0, 1800)
 plt.show()

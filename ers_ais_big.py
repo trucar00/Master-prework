@@ -4,7 +4,7 @@ import pyarrow.parquet as pq
 
 # READY TO SAVE GEAR SPECIFIC AIS DATA
 
-df_ers = pd.read_csv("Data/ers-fangstmelding-nonan.csv")
+df_ers = pd.read_csv("Data/ers-fangstmelding-nonan-2024.csv")
 
 nr_callsigns_ers = df_ers["Radiokallesignal (ERS)"].nunique()
 
@@ -25,7 +25,7 @@ df_ers["Redskap - gruppe"] = df_ers["Redskap - gruppe"].astype("string").str.str
 df_ers["start_pos"] = list(zip(df_ers["Startposisjon lengde"].astype(float), df_ers["Startposisjon bredde"].astype(float)))
 df_ers["end_pos"] = list(zip(df_ers["Stopposisjon lengde"].astype(float), df_ers["Stopposisjon bredde"].astype(float)))
 
-gear = "Not"
+gear = "Krokredskap"
 
 gear_sets = (
     df_ers.groupby("Radiokallesignal (ERS)")["Redskap - gruppe"]
@@ -50,7 +50,7 @@ print(check["Redskap - gruppe"].unique())
 
 
 table = pq.read_table(
-    "Data/AIS/whole_month/01clean.parquet",
+    "Data/AIS/whole_month2/01.parquet",
     columns=["mmsi", "callsign", "date_time_utc", "lon", "lat", "speed", "cog"],
     filters=[("callsign", "in", callsigns)]
 )

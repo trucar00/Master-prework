@@ -2,3 +2,4 @@ Data/
 .DS_Store
 find_sts/saved_sts/
 *.csv
+*.parquet

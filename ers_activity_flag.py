@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 
 # Doesnt find a trawler that reports steaming in january.
 
-df = pd.read_csv("Data/ers-fangstmelding-nonan.csv")
+df = pd.read_csv("Data/ers-fangstmelding-nonan-2024.csv")
 
-steaming_df = df.loc[df["Aktivitet"] == "Steaming"]
+steaming_df = df.loc[df["Aktivitet"] == "Leiting etter fisk uten fiskeredskap"]
 
 fmt = "%d.%m.%Y %H:%M:%S"
 steaming_df["Starttidspunkt"] = pd.to_datetime(steaming_df["Starttidspunkt"], format=fmt)
@@ -15,7 +15,7 @@ steaming_df["Radiokallesignal (ERS)"] = steaming_df["Radiokallesignal (ERS)"].as
 steaming_callsigns = steaming_df["Radiokallesignal (ERS)"].unique()
 print(steaming_df["Radiokallesignal (ERS)"].nunique())
 
-df_ais = pd.read_csv("Data/gear_specific/trawl_clean_downsampled.csv")
+df_ais = pd.read_csv("Data/gear_specific/not_feb_2024.csv")
 df_ais["date_time_utc"] = pd.to_datetime(df_ais["date_time_utc"])
 
 # Apply the filter (equivalent to Parquet filters)
@@ -46,13 +46,13 @@ for callsign, d in df_ais.groupby("callsign"):
     plt.figure(figsize=(8, 6))
 
     # Blue = not steaming
-    """ plt.plot(
+    plt.plot(
         d.loc[~steaming_mask, "lon"],
         d.loc[~steaming_mask, "lat"],
         "b",
         label="Other",
         linewidth=2
-    ) """
+    )
 
     # Red = steaming
     plt.plot(

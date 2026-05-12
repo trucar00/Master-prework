@@ -5,7 +5,7 @@ import pyarrow.parquet as pq
 # READY TO SAVE GEAR SPECIFIC AIS DATA
 
 def get_ers(path="Data/ers-fangstmelding-nonan.csv"):
-    df_ers = pd.read_csv("Data/ers-fangstmelding-nonan.csv") #whole of 2024
+    df_ers = pd.read_csv(path) #whole of 2024
 
     print(df_ers["Redskap - gruppe"].unique())
 
@@ -173,22 +173,22 @@ def create_gear_specific_ais_dataset(
         matched = matched[keep_cols].copy()
 
     if save_path is not None:
-        matched.to_csv(save_path, index=False)
+        matched.to_parquet(save_path, index=False)
         print(f"Saved to {save_path}")
 
     return matched
 
 GEAR = "Snurrevad"
-for month in range(1, 9):
+for month in range(1, 8):
 
     print(f"Finding fishing segments for {GEAR} for month: {month:02d}")
     matched = create_gear_specific_ais_dataset(
-        ers_path="Data/ers-fangstmelding-nonan.csv",
+        ers_path="Data/ers-fangstmelding-nonan-2024.csv",
         ais_parquet_path=f"Data/AIS/whole_month2/{month:02d}.parquet",
         gear=GEAR,
-        activities=["I fiske"],   # adjust to your actual values
-        min_duration=15,
-        max_duration=1500,
+        activities=["Setting av redskap"],   # adjust to your actual values
+        min_duration=10,
+        max_duration=600,
         save_path=None              #f"gear/not/{month:02d}.csv"
     )
 

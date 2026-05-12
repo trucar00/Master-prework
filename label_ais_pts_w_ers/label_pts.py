@@ -133,7 +133,7 @@ def main():
         df_ais = read_ais_parquet(parquet_path=filepath, callsigns=registered_callsigns)
 
         df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
-        df_ais_with_labels.to_parquet(f"ais_with_ers_labels_{month:02d}.parquet", index=False)
+        df_ais_with_labels.to_parquet(f"ais_ers_labels_{month:02d}.parquet", index=False)
 
 
 if __name__ == "__main__":

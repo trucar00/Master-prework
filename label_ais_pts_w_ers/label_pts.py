@@ -124,17 +124,17 @@ def local_main():
 
 
 def main():
-    year = 2024
-    df_ers = get_ers(ers_path="ers-fangstmelding-nonan-2024.csv")
-    registered_callsigns = get_registered_callsigns(df_ers)
-    
-    for month in range(1, 13):
-        filepath = f"../../../Test/IDUN/Processed_AIS_2024/Cleaned_pq_new2/{month:02d}.parquet"
+    for year in range(2022, 2024+1):
+        df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")
+        registered_callsigns = get_registered_callsigns(df_ers)
 
-        df_ais = read_ais_parquet(parquet_path=filepath, callsigns=registered_callsigns)
+        for month in range(1, 13):
+            filepath = f"../../../Test/IDUN/Processed_AIS_{year}/Cleaned_pq_new/{month:02d}.parquet"
 
-        df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
-        df_ais_with_labels.to_parquet(f"ais_ers_labels_{month:02d}.parquet", index=False)
+            df_ais = read_ais_parquet(parquet_path=filepath, callsigns=registered_callsigns)
+
+            df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
+            df_ais_with_labels.to_parquet(f"ais_ers_labels_{month:02d}_{year}.parquet", index=False)
 
 
 if __name__ == "__main__":

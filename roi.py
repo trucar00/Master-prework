@@ -1,37 +1,98 @@
 import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
+import geopandas as gpd
+from shapely.geometry import LineString
+import contextily as ctx
+import numpy as np
+from pyproj import Transformer
 
-# Define latitude and longitude range
-lat = 50
+# STYLE OF PLOT
+plt.rcParams.update({
+    "font.family": "serif",
+    "mathtext.fontset": "cm",   # Computer Modern look
+    "font.size": 16,
+    "axes.labelsize": 16,
+    "legend.fontsize": 14,
+    "legend.title_fontsize": 16,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
+    "axes.axisbelow": True,
+})
+
+# Region limits
+lat_min, lat_max = 55, 80
 lon_min, lon_max = -10, 45
 
-# Create map with PlateCarree projection
-fig = plt.figure(figsize=(8, 8))
-ax = plt.axes(projection=ccrs.PlateCarree())
+# Create ONE connected linestring
+roi = LineString([
+    (lon_min, lat_max),   # top-left
+    (lon_min, lat_min),   # bottom-left
+    (lon_max, lat_min),   # bottom-right
+    (lon_max, lat_max)    # top-right
+])
 
-# Focus on Norway & surrounding north
-ax.set_extent([-15, 50, 50, 88], crs=ccrs.PlateCarree())
+gdf = gpd.GeoDataFrame(geometry=[roi], crs="EPSG:4326")
 
-# Add background features
-ax.coastlines(resolution="50m")
-ax.add_feature(cfeature.BORDERS, linestyle=":")
-ax.add_feature(cfeature.LAND, facecolor="lightgray")
-ax.add_feature(cfeature.OCEAN, facecolor="lightblue")
-ax.gridlines(draw_labels=True, linestyle=":")
-ax.set_xlabel("Longitude")
-ax.set_ylabel("Latitude")
+# Convert to Web Mercator
+gdf_web = gdf.to_crs(epsg=3857)
 
-# --- Plot segment of latitude line at 62°N ---
+fig, ax = plt.subplots(figsize=(8, 8))
 
-ax.plot([6.25, 6.25, 8.3, 8.3], [57.5, 55.25, 55.25, 57.5], color="red", linewidth=1.2, label="Region")
+# Plot region outline
+gdf_web.plot(
+    ax=ax,
+    color="red",
+    linestyle="--",
+    linewidth=2.2,
+    zorder=3,
+)
 
-# Optional: mark the endpoints
+# Map extent
+xmin, ymin, xmax, ymax = gdf_web.total_bounds
+pad_x = (xmax - xmin) * 0.1
+pad_y = (ymax - ymin) * 0.1
 
-plt.ylabel("Latitude")
-plt.xlabel("Longitude")
-#plt.savefig("Figures/region2.eps")
-plt.legend()
+ax.set_xlim(xmin - pad_x, xmax + pad_x)
+ax.set_ylim(ymin - pad_y, ymax)
+
+# Add basemap
+ctx.add_basemap(
+    ax,
+    source=ctx.providers.CartoDB.Positron,
+    zoom=4
+)
+
+# ---- LAT/LON TICKS ----
+
+transformer = Transformer.from_crs(
+    "EPSG:4326",
+    "EPSG:3857",
+    always_xy=True
+)
+
+# Longitude ticks
+xticks_lon = np.arange(lon_min, lon_max + 1, 10)
+xticks_merc = [
+    transformer.transform(lon, lat_min)[0]
+    for lon in xticks_lon
+]
+
+# Latitude ticks
+yticks_lat = np.arange(lat_min, lat_max + 1, 5)
+yticks_merc = [
+    transformer.transform(lon_min, lat)[1]
+    for lat in yticks_lat
+]
+
+ax.set_xticks(xticks_merc)
+ax.set_yticks(yticks_merc)
+
+ax.set_xticklabels([f"{lon}°E" if lon >= 0 else f"{abs(lon)}°W"
+                    for lon in xticks_lon])
+
+ax.set_yticklabels([f"{lat}°N" for lat in yticks_lat])
+ax.grid(linestyle="--")
+
 plt.tight_layout()
-plt.gca().set_aspect('equal', adjustable='box')
-plt.show()
+plt.margins(x=0.02)
+#plt.show()
+plt.savefig("roi.pdf", bbox_inches="tight")

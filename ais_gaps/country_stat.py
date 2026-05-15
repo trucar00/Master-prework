@@ -17,10 +17,24 @@ country_code = pd.read_csv("../Data/mmsi_landcodes.csv", sep=";", encoding="utf-
 
 df_small = df_small.join(country_code.set_index("Digit"), on="landcode")
 df_small = df_small.rename(columns={"Allocated to": "country"})
+df_small["country"] = df_small["country"].str.slice(stop=15)
 
-#df_small = df_small.drop_duplicates(subset=["mmsi", "country"], keep="first")
+df_small_dropped = df_small.drop_duplicates(subset=["mmsi", "country"], keep="first")
+country_counts = df_small_dropped["country"].value_counts()
+plt.figure(figsize=(5, 6))
+ax = country_counts.sort_values().plot(kind="barh")
 
-print(df_small["country"].unique())
+plt.xlabel("Nr of fishing vessels")
+plt.ylabel("Country")
+
+# Add value labels
+for i, v in enumerate(country_counts.sort_values()):
+    ax.text(v, i, f" {v}", va='center')
+
+plt.tight_layout()
+plt.show()
+
+#print(df_small["country"].unique())
 
 threshold = pd.Timedelta(hours=1)
 
@@ -45,9 +59,10 @@ avg_gap_country = (
     .sort_values(ascending=False)
 )
 
+avg_gap_country = avg_gap_country[avg_gap_country > 5]
 print(avg_gap_country)
 
-plt.figure(figsize=(10, 12))
+plt.figure(figsize=(5, 6))
 
 avg_gap_country.sort_values().plot(kind="barh")
 

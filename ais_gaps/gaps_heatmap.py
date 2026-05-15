@@ -36,14 +36,16 @@ for mmsi, d in df.groupby("mmsi"):
 
 #plt.legend()
 
-plt.figure(figsize=(10,8))
+fig = plt.figure(figsize=(10,8))
 
-plt.hist2d(lons, lats, bins=100, cmap="hot", norm=colors.LogNorm())
-plt.colorbar(label="Number of AIS gaps")
+plt.hist2d(lons, lats, bins=150, cmap="hot", norm=colors.LogNorm())
+plt.colorbar(label="Number of AIS gaps", shrink=0.5)
 
 plt.xlabel("Longitude")
 plt.ylabel("Latitude")
 plt.title("Heatmap of AIS Signal Gaps")
+
 plt.gca().set_aspect('equal', adjustable='box')
+plt.tight_layout()
 plt.show()
     

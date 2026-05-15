@@ -124,7 +124,7 @@ def local_main():
 
 
 def main():
-    for year in range(2022, 2024+1):
+    for year in range(2024, 2024+1):
         df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")
         registered_callsigns = get_registered_callsigns(df_ers)
 

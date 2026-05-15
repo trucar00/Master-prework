@@ -127,7 +127,7 @@ def local_main():
     print(df_ais_with_labels.head())
     df_ais_with_labels.to_csv("ais_with_ers_labels.csv")
 
-
+# yeeha
 def main():
     for year in range(2024, 2024+1):
         df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")

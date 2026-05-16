@@ -55,6 +55,16 @@ def concat_month(month, path):
 
     return pd.concat(dfs, ignore_index=True)
 
+def concat_3_months(year, path):
+    for start in range(1, 12+1, 3):   # starts at 1 and 
+        dfs = []
+        for i in range(start, start + 3):
+            df = pd.read_parquet(f"{path}{i:02d}_{year}.parquet")
+            df["trajectory_id"] = df["trajectory_id"].astype(str) + "-" + str(year) + "-" + str(i) # new unique traj_id
+            dfs.append(df)
+
+    return pd.concat(dfs, ignore_index=True)
+
 def load_ais_w_labels(df, allowed_report, gear):
     
     df = df.fillna(value={"label": "no_fishing"})
@@ -499,6 +509,50 @@ def main2():
 
     return
 
+def main3():
+    path = "ais_ers_labels_"
+    for year in range(2022, 2024+1):
+        for start in range(1, 12+1, 3):   # starts at 1 and 
+            dfs = []
+            for i in range(start, start + 3):
+                df = pd.read_parquet(f"{path}{i:02d}_{year}.parquet")
+                df["trajectory_id"] = df["trajectory_id"].astype(str) + "-" + str(year) + "-" + str(i) # new unique traj_id
+                dfs.append(df)
+
+            base_df = pd.concat(dfs, ignore_index=True)
+    
+            for i in range(5):  # test on only Not and Trål
+                g = LIST[i]
+                allowed = ALLOWED_LIST[i]
+
+                print(f"Making for {g} year {year} months {start} to {start+3}")
+
+                df = load_ais_w_labels(base_df, allowed_report=allowed, gear=g)
+    
+                df = speed_rule(df, speed_threshold=SPEED_THRESHOLD, window_len=SPEED_WINDOW)
+        
+                df = close_to_shore(df, threshold_km=SHORE_THRESHOLD_KM)
+        
+                feats_df_for_clustering = features_for_clustering(df, half_window=HALF_WINDOW, min_messages=MIN_MESSAGES)
+                df = cluster_no_fishing(df, df_cluster_feats=feats_df_for_clustering, n_clusters=N_CLUSTERS)
+
+                print(df.head())
+
+                df = add_confidence_flags(df)
+                
+                gear_name = next(iter(g))
+                if gear_name == "Bur og ruser":
+                    gear_name = "Traps"
+                df.to_parquet(f"confident2/{gear_name}_{year}_{start}_{start+2}.parquet", index=False)
+
+                del df, feats_df_for_clustering
+                gc.collect()
+
+            del base_df
+            gc.collect()
+    return
+
+
 def plot(df, gear_set):
 
     for traj_id, d in df.groupby("trajectory_id"):
@@ -555,7 +609,7 @@ def plot(df, gear_set):
 
 
 if __name__ == "__main__":
-    main2()
+    main3()
 
 
     """ df = pd.read_parquet("conf_labels/Bur og ruser_conf_no_fishing_ais_2024_2month.parquet")

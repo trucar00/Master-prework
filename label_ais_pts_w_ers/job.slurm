@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --account=share-ie-itk
 #SBATCH --partition=CPUQ
-#SBATCH --time=2:00:00
+#SBATCH --time=5:00:00
 #SBATCH --nodes=1             # 1 compute nodes
 #SBATCH --cpus-per-task=32     # 2 CPU cores
 #SBATCH --mem=128G             # GB memory
-#SBATCH --output=output_confident_labeling_monthwise.txt    # Log file
+#SBATCH --output=output_confident_labeling_3_months_at_time.txt    # Log file
 #SBATCH --mail-user=trulsc00@gmail.com
 #SBATCH --mail-type=ALL
 

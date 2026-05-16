@@ -5,6 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import rasterio
 import matplotlib.pyplot as plt
+import gc
 
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371000 # Radius of the earth in meters
@@ -311,7 +312,7 @@ def features_for_clustering(df, half_window, min_messages):
 
     results = []
 
-    for traj_id, d in tqdm(df.groupby("trajectory_id"), desc="Making cluster features"):
+    for traj_id, d in df.groupby("trajectory_id"):
         feats = features_for_trip(d)
         if feats is not None:
             results.append(feats)
@@ -415,6 +416,7 @@ def main():
         print(f"Loading all ais-data for {y}...")
         path = f"ais_ers_labels_full_{y}.parquet"
         base_df = pd.read_parquet(path, engine="pyarrow")
+        print(base_df.memory_usage(deep=True).sum() / 1e9, "GB")
 
         for i in range(6):  # test on only Not and Trål
             g = LIST[i]
@@ -422,7 +424,7 @@ def main():
 
             print(f"Making for {g} year {y}")
 
-            df = load_ais_w_labels(base_df.copy(), allowed_report=allowed, gear=g)
+            df = load_ais_w_labels(base_df, allowed_report=allowed, gear=g)
  
             df = speed_rule(df, speed_threshold=SPEED_THRESHOLD, window_len=SPEED_WINDOW)
       
@@ -439,6 +441,12 @@ def main():
             if gear_name == "Bur og ruser":
                 gear_name = "Traps"
             df.to_parquet(f"confident/{gear_name}_{y}.parquet", index=False)
+
+            del df, feats_df_for_clustering
+            gc.collect()
+
+        del base_df
+        gc.collect()
 
     return
 

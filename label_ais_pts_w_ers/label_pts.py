@@ -69,7 +69,7 @@ def get_registered_callsigns(df_ers):
     return df_ers["Radiokallesignal (ERS)"].unique()
 
 def read_ais_parquet(parquet_path, callsigns=None):
-    columns = ["mmsi", "trajectory_id", "callsign", "date_time_utc", "lon", "lat", "speed", "cog"]
+    columns = ["mmsi", "trajectory_id", "callsign", "date_time_utc", "lon", "lat", "speed", "cog"] # ADD here more columns if we need
 
     filters = None
     if callsigns is not None and len(callsigns) > 0:

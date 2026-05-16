@@ -436,6 +436,8 @@ def main():
             df = add_confidence_flags(df)
             
             gear_name = next(iter(g))
+            if gear_name == "Bur og ruser":
+                gear_name = "Traps"
             df.to_parquet(f"confident/{gear_name}_{y}.parquet", index=False)
 
     return
@@ -496,14 +498,14 @@ def plot(df, gear_set):
 
 
 if __name__ == "__main__":
-    #main()
+    main()
 
 
-    df = pd.read_parquet("conf_labels/Bur og ruser_conf_no_fishing_ais_2024_2month.parquet")
+    """ df = pd.read_parquet("conf_labels/Bur og ruser_conf_no_fishing_ais_2024_2month.parquet")
     print(df.head())
     print(df.tail())
     print(df["no_fish_cl"].value_counts())
-    plot(df, gear_set={"Krokredskap", "Trål", "Not", "Garn", "Snurrevad", "Bur og ruser"})
+    plot(df, gear_set={"Krokredskap", "Trål", "Not", "Garn", "Snurrevad", "Bur og ruser"}) """
 
     """ for i in range(5):
         g = LIST[i]

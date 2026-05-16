@@ -418,7 +418,7 @@ def main():
         base_df = pd.read_parquet(path, engine="pyarrow")
         print(base_df.memory_usage(deep=True).sum() / 1e9, "GB")
 
-        for i in range(6):  # test on only Not and Trål
+        for i in range(3):  # test on only Not and Trål
             g = LIST[i]
             allowed = ALLOWED_LIST[i]
 

@@ -511,7 +511,7 @@ def main2():
 
 def main3():
     path = "ais_ers_labels_"
-    for year in range(2022, 2024+1):
+    for year in range(2024, 2024+1):
         for start in range(1, 12+1, 3):   # starts at 1 and 
             dfs = []
             for i in range(start, start + 3):

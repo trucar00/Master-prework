@@ -21,4 +21,4 @@ source ~/venv/myenv/bin/activate
 
 # Run your script
 #python label_pts.py
-python confident_negs_scale_fast.py
+python label_pts.py

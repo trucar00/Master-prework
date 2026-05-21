@@ -1,6 +1,6 @@
 import pandas as pd
 
-YEAR = "2022"
+YEAR = "2024"
 
 ers_df = pd.read_csv(f"Data/elektronisk-rapportering-ers-{YEAR}-fangstmelding-dca.csv", sep=";", encoding="utf-8", decimal=",")
 print(ers_df.dtypes)
@@ -18,4 +18,14 @@ after = len(ers_df)
 
 print(f"Dropped {before - after} rows ({(before-after)/before:.1%})")
 
-ers_df.to_csv(f"Data/ers-fangstmelding-nonan-{YEAR}.csv", index=False)
+
+fmt = "%d.%m.%Y %H:%M:%S"
+ers_df["Starttidspunkt"] = pd.to_datetime(ers_df["Starttidspunkt"], format=fmt)
+
+test = ers_df.loc[ers_df["Starttidspunkt"].between("2024-03-01", "2024-03-30")].copy()
+print("TESTY")
+print(test[["Fartøynavn (ERS)", "Radiokallesignal (ERS)", "Starttidspunkt"]].head())
+print("----")
+
+
+#ers_df.to_csv(f"Data/ers-fangstmelding-nonan-{YEAR}.csv", index=False)

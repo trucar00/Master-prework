@@ -23,6 +23,8 @@ def get_ers(ers_path, gear_types=GEAR_TYPES, activities=["I fiske"]):
             "Stopptidspunkt",
             "Radiokallesignal (ERS)",
             "Redskap - gruppe",
+            "Redskap FDIR",
+            "Redskap FAO",
             "Varighet",
             "Aktivitet",
         ]
@@ -44,8 +46,17 @@ def get_ers(ers_path, gear_types=GEAR_TYPES, activities=["I fiske"]):
     df_ers["Radiokallesignal (ERS)"] = (
         df_ers["Radiokallesignal (ERS)"].astype("string").str.strip().str.upper()
     )
+
     df_ers["Redskap - gruppe"] = (
         df_ers["Redskap - gruppe"].astype("string").str.strip()
+    )
+
+    df_ers["Redskap FDIR"] = (
+        df_ers["Redskap FDIR"].astype("string").str.strip()
+    )
+
+    df_ers["Redskap FAO"] = (
+        df_ers["Redskap FAO"].astype("string").str.strip()
     )
 
     df_ers = df_ers.loc[df_ers["Redskap - gruppe"].isin(gear_types)].copy()
@@ -89,6 +100,10 @@ def read_ais_parquet(parquet_path, callsigns=None):
 
 def assign_ais_message_to_label(df_ais, df_ers):
 
+    df_ais["label"] = pd.NA
+    df_ais["label_sub1"] = pd.NA  # Redskap FAO
+    df_ais["label_sub2"] = pd.NA  # Redskap FDIR
+
     ers_groups = {
         callsign: d.sort_values("Starttidspunkt").reset_index(drop=True)
         for callsign, d in df_ers.groupby("Radiokallesignal (ERS)", sort=False)
@@ -109,6 +124,8 @@ def assign_ais_message_to_label(df_ais, df_ers):
                 (d_ais["date_time_utc"] <= row["Stopptidspunkt"])
             )
             d_ais.loc[mask, "label"] = row["Redskap - gruppe"]
+            d_ais.loc[mask, "label_sub1"] = row["Redskap FAO"]
+            d_ais.loc[mask, "label_sub2"] = row["Redskap FDIR"]
 
         labeled_parts.append(d_ais)
 
@@ -129,7 +146,7 @@ def local_main():
 
 # yeeha
 def main():
-    for year in range(2022, 2022+1):
+    for year in range(2022, 2024+1):
         df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")
         registered_callsigns = get_registered_callsigns(df_ers)
 
@@ -139,7 +156,7 @@ def main():
             df_ais = read_ais_parquet(parquet_path=filepath, callsigns=registered_callsigns)
 
             df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
-            df_ais_with_labels.to_parquet(f"ais_ers_labels_{month:02d}_{year}.parquet", index=False)
+            df_ais_with_labels.to_parquet(f"sub_labels/ais_ers_sub_labels_{month:02d}_{year}.parquet", index=False)
 
 
 if __name__ == "__main__":

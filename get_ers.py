@@ -22,9 +22,9 @@ print(f"Dropped {before - after} rows ({(before-after)/before:.1%})")
 fmt = "%d.%m.%Y %H:%M:%S"
 ers_df["Starttidspunkt"] = pd.to_datetime(ers_df["Starttidspunkt"], format=fmt)
 
-test = ers_df.loc[ers_df["Starttidspunkt"].between("2024-03-01", "2024-03-30")].copy()
+test = ers_df.loc[ers_df["Radiokallesignal (ERS)"] == "LEBW"].copy()
 print("TESTY")
-print(test[["Fartøynavn (ERS)", "Radiokallesignal (ERS)", "Starttidspunkt"]].head())
+print(test[["Fartøynavn (ERS)", "Radiokallesignal (ERS)", "Starttidspunkt", "Redskap FAO"]].head())
 print("----")
 
 

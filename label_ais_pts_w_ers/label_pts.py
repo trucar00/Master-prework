@@ -1,13 +1,14 @@
 import pandas as pd
 import pyarrow.parquet as pq
 
-GEAR_TYPES = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn", "Bur og ruser"]
+#GEAR_TYPES = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn", "Bur og ruser"]
+GEAR_TYPES = ["Krokredskap"]
 
 DURATION_LIMITS = {
     "Trål": (30, 500),
     "Not": (15, 250),
     "Snurrevad": (15, 250),
-    "Krokredskap": (500, 1500),
+    "Krokredskap": (0, 1500), # 500 1500
     "Garn": (150, 1000),
     "Bur og ruser": (15, 300)
 }
@@ -134,15 +135,15 @@ def assign_ais_message_to_label(df_ais, df_ers):
 
 
 def local_main():
-    df_ers = get_ers(ers_path="Data/ers-fangstmelding-nonan.csv")
+    df_ers = get_ers(ers_path="Data/ers-fangstmelding-nonan-2024.csv")
     registered_callsigns = get_registered_callsigns(df_ers)
 
-    df_ais = read_ais_parquet(parquet_path="Data/AIS/whole_month2/01.parquet", callsigns=registered_callsigns)
+    df_ais = read_ais_parquet(parquet_path="Data/AIS/whole_month_new/09.parquet", callsigns=registered_callsigns)
 
 
     df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
     print(df_ais_with_labels.head())
-    df_ais_with_labels.to_csv("ais_with_ers_labels.csv")
+    df_ais_with_labels.to_parquet("ais_ers_krok_09_2024.parquet")
 
 # yeeha
 def main():
@@ -160,5 +161,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-    #local_main()
+    #main()
+    local_main()

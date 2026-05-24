@@ -25,7 +25,7 @@ df_ers["Redskap - gruppe"] = df_ers["Redskap - gruppe"].astype("string").str.str
 df_ers["start_pos"] = list(zip(df_ers["Startposisjon lengde"].astype(float), df_ers["Startposisjon bredde"].astype(float)))
 df_ers["end_pos"] = list(zip(df_ers["Stopposisjon lengde"].astype(float), df_ers["Stopposisjon bredde"].astype(float)))
 
-gear = "Bur og ruser"
+gear = "Trål"
 
 gear_sets = (
     df_ers.groupby("Radiokallesignal (ERS)")["Redskap - gruppe"]
@@ -50,7 +50,7 @@ print(check["Redskap - gruppe"].unique())
 
 
 table = pq.read_table(
-    "Data/AIS/whole_month2/01.parquet",
+    "Data/AIS/whole_month_new/01.parquet",
     columns=["mmsi", "callsign", "date_time_utc", "lon", "lat", "speed", "cog"],
     filters=[("callsign", "in", callsigns)]
 )

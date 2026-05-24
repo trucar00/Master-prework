@@ -5,7 +5,7 @@ import seaborn as sns
 # needs more work, take the strict: only reported longlining. 
 
 df = pd.read_parquet("ais_ers_labels_clean_01_04.parquet")
-GEAR = "Garn"
+GEAR = "Trål"
 
 translatation = {
     "Trål": "trawlers",

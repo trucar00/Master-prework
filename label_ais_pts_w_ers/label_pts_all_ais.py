@@ -1,0 +1,165 @@
+import pandas as pd
+import pyarrow.parquet as pq
+
+GEAR_TYPES = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn", "Bur og ruser"]
+#GEAR_TYPES = ["Krokredskap"]
+
+DURATION_LIMITS = {
+    "Trål": (30, 500),
+    "Not": (15, 250),
+    "Snurrevad": (15, 250),
+    "Krokredskap": (500, 1500), # 500 1500
+    "Garn": (150, 1000),
+    "Bur og ruser": (15, 300)
+}
+
+def get_ers(ers_path, gear_types=GEAR_TYPES, activities=["I fiske"]):
+    df_ers = pd.read_csv(ers_path)
+
+    print(df_ers["Redskap - gruppe"].unique())
+
+    df_ers = df_ers.dropna(
+        subset=[
+            "Starttidspunkt",
+            "Stopptidspunkt",
+            "Radiokallesignal (ERS)",
+            "Redskap - gruppe",
+            "Redskap FDIR",
+            "Redskap FAO",
+            "Varighet",
+            "Aktivitet",
+        ]
+    )
+    df_ers = df_ers.drop_duplicates(keep="first")
+
+    df_ers = df_ers[
+        df_ers["Starttidspunkt"].str.contains(" ", na=False) &
+        df_ers["Stopptidspunkt"].str.contains(" ", na=False)
+    ]
+
+    fmt = "%d.%m.%Y %H:%M:%S"
+    df_ers["Starttidspunkt"] = pd.to_datetime(df_ers["Starttidspunkt"], format=fmt)
+    df_ers["Stopptidspunkt"] = pd.to_datetime(df_ers["Stopptidspunkt"], format=fmt)
+
+    df_ers = df_ers.loc[df_ers["Stopptidspunkt"] >= df_ers["Starttidspunkt"]].copy()
+    df_ers["Varighet"] = pd.to_numeric(df_ers["Varighet"], errors="coerce")
+
+    df_ers["Radiokallesignal (ERS)"] = (
+        df_ers["Radiokallesignal (ERS)"].astype("string").str.strip().str.upper()
+    )
+
+    df_ers["Redskap - gruppe"] = (
+        df_ers["Redskap - gruppe"].astype("string").str.strip()
+    )
+
+    df_ers["Redskap FDIR"] = (
+        df_ers["Redskap FDIR"].astype("string").str.strip()
+    )
+
+    df_ers["Redskap FAO"] = (
+        df_ers["Redskap FAO"].astype("string").str.strip()
+    )
+
+    df_ers = df_ers.loc[df_ers["Redskap - gruppe"].isin(gear_types)].copy()
+    df_ers = df_ers.loc[df_ers["Aktivitet"].isin(activities)].copy()
+
+    # apply duration limits for each gear type
+    df_ers["min_duration"] = df_ers["Redskap - gruppe"].map(lambda g: DURATION_LIMITS[g][0])
+    df_ers["max_duration"] = df_ers["Redskap - gruppe"].map(lambda g: DURATION_LIMITS[g][1])
+
+    df_ers = df_ers.loc[
+        (df_ers["Varighet"] >= df_ers["min_duration"]) &
+        (df_ers["Varighet"] <= df_ers["max_duration"])
+    ].copy()
+
+    df_ers = df_ers.drop(columns=["min_duration", "max_duration"])
+
+    df_ers = df_ers.reset_index(drop=True)
+    return df_ers
+
+def get_registered_callsigns(df_ers):
+    return df_ers["Radiokallesignal (ERS)"].unique()
+
+def read_ais_parquet(parquet_path):
+    columns = ["mmsi", "trajectory_id", "callsign", "date_time_utc", "lon", "lat", "speed", "cog"]
+
+    df_ais = pd.read_parquet(parquet_path, columns=columns, engine="pyarrow")
+
+    df_ais["callsign"] = (
+        df_ais["callsign"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_ais["date_time_utc"] = pd.to_datetime(df_ais["date_time_utc"], errors="coerce")
+    df_ais = df_ais.dropna(subset=["callsign", "date_time_utc"])
+
+    return df_ais
+
+def assign_ais_message_to_label(df_ais, df_ers):
+
+    df_ais["label"] = pd.NA
+    df_ais["label_sub1"] = pd.NA  # Redskap FAO
+    df_ais["label_sub2"] = pd.NA  # Redskap FDIR
+
+    ers_groups = {
+        callsign: d.sort_values("Starttidspunkt").reset_index(drop=True)
+        for callsign, d in df_ers.groupby("Radiokallesignal (ERS)", sort=False)
+    }
+
+    labeled_parts = []
+
+    for callsign, d_ais in df_ais.groupby("callsign", sort=False):
+        d_ais = d_ais.sort_values("date_time_utc").copy()
+        if callsign not in ers_groups:
+            labeled_parts.append(d_ais)
+            continue
+
+        d_ers = ers_groups[callsign]
+        for _, row in d_ers.iterrows():
+            mask = (
+                (d_ais["date_time_utc"] >= row["Starttidspunkt"]) &
+                (d_ais["date_time_utc"] <= row["Stopptidspunkt"])
+            )
+            d_ais.loc[mask, "label"] = row["Redskap - gruppe"]
+            d_ais.loc[mask, "label_sub1"] = row["Redskap FAO"]
+            d_ais.loc[mask, "label_sub2"] = row["Redskap FDIR"]
+
+        labeled_parts.append(d_ais)
+
+    df_labeled = pd.concat(labeled_parts, ignore_index=True)
+    return df_labeled
+
+
+def local_main():
+    df_ers = get_ers(ers_path="Data/ers-fangstmelding-nonan-2025.csv")
+    registered_callsigns = get_registered_callsigns(df_ers)
+    print(len(registered_callsigns))
+
+    df_ais = read_ais_parquet(parquet_path="Data/AIS/whole_month_new/01_2025.parquet", callsigns=registered_callsigns)
+    print("Callsigns found in ais ", df_ais["callsign"].nunique())
+
+    df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
+    print(df_ais_with_labels.head())
+    #df_ais_with_labels.to_parquet("ais_ers_krok_09_2024.parquet")
+
+# yeeha
+def main():
+    for year in range(2025, 2025+1):
+        df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")
+        registered_callsigns = get_registered_callsigns(df_ers)
+        print("Nr of vessels in ERS", len(registered_callsigns))
+
+        for month in range(1, 13):
+            filepath = f"../../../Test/IDUN/Processed_AIS_{year}/Cleaned_pq_new/{month:02d}.parquet"
+
+            df_ais = read_ais_parquet(parquet_path=filepath)
+
+            df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
+            df_ais_with_labels.to_parquet(f"all_vessels_w_labels/ais_ers_labels_all_{month:02d}_{year}.parquet", index=False)
+
+
+if __name__ == "__main__":
+    main()
+    #local_main()

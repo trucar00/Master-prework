@@ -50,7 +50,7 @@ print(check["Redskap - gruppe"].unique())
 
 
 table = pq.read_table(
-    "Data/AIS/whole_month_new/01.parquet",
+    "Data/AIS/whole_month_new/01_2024.parquet",
     columns=["mmsi", "callsign", "date_time_utc", "lon", "lat", "speed", "cog"],
     filters=[("callsign", "in", callsigns)]
 )

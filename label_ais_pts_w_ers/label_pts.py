@@ -2,13 +2,13 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 GEAR_TYPES = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn", "Bur og ruser"]
-#EAR_TYPES = ["Krokredskap"]
+#GEAR_TYPES = ["Krokredskap"]
 
 DURATION_LIMITS = {
     "Trål": (30, 500),
     "Not": (15, 250),
     "Snurrevad": (15, 250),
-    "Krokredskap": (0, 1500), # 500 1500
+    "Krokredskap": (500, 1500), # 500 1500
     "Garn": (150, 1000),
     "Bur og ruser": (15, 300)
 }
@@ -81,21 +81,28 @@ def get_registered_callsigns(df_ers):
     return df_ers["Radiokallesignal (ERS)"].unique()
 
 def read_ais_parquet(parquet_path, callsigns=None):
-    columns = ["mmsi", "trajectory_id", "callsign", "date_time_utc", "lon", "lat", "speed", "cog"] # ADD here more columns if we need
+    columns = ["mmsi", "trajectory_id", "callsign", "date_time_utc", "lon", "lat", "speed", "cog"]
 
-    filters = None
-    if callsigns is not None and len(callsigns) > 0:
-        filters = [("callsign", "in", list(callsigns))]
+    df_ais = pd.read_parquet(parquet_path, columns=columns, engine="pyarrow")
 
-        table = pq.read_table(parquet_path, columns=columns, filters=filters)
-        df_ais = table.to_pandas()
-    else:
-        df_ais = pd.DataFrame(columns=columns)
-        print("No callsigns")
+    df_ais["callsign"] = (
+        df_ais["callsign"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
 
-    df_ais["callsign"] = df_ais["callsign"].astype("string").str.strip().str.upper()
     df_ais["date_time_utc"] = pd.to_datetime(df_ais["date_time_utc"], errors="coerce")
     df_ais = df_ais.dropna(subset=["callsign", "date_time_utc"])
+
+    if callsigns is not None and len(callsigns) > 0:
+        callsigns = (
+            pd.Series(callsigns)
+            .astype("string")
+            .str.strip()
+            .str.upper()
+        )
+        df_ais = df_ais[df_ais["callsign"].isin(set(callsigns))]
 
     return df_ais
 
@@ -135,28 +142,29 @@ def assign_ais_message_to_label(df_ais, df_ers):
 
 
 def local_main():
-    df_ers = get_ers(ers_path="Data/ers-fangstmelding-nonan-2024.csv")
+    df_ers = get_ers(ers_path="Data/ers-fangstmelding-nonan-2025.csv")
     registered_callsigns = get_registered_callsigns(df_ers)
     print(len(registered_callsigns))
 
-    df_ais = read_ais_parquet(parquet_path="Data/AIS/whole_month_new/09.parquet", callsigns=registered_callsigns)
-
+    df_ais = read_ais_parquet(parquet_path="Data/AIS/whole_month_new/01_2025.parquet", callsigns=registered_callsigns)
+    print("Callsigns found in ais ", df_ais["callsign"].nunique())
 
     df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
     print(df_ais_with_labels.head())
-    df_ais_with_labels.to_parquet("ais_ers_krok_09_2024.parquet")
+    #df_ais_with_labels.to_parquet("ais_ers_krok_09_2024.parquet")
 
 # yeeha
 def main():
     for year in range(2025, 2025+1):
         df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")
         registered_callsigns = get_registered_callsigns(df_ers)
-        print("Nr of vessels ", len(registered_callsigns))
+        print("Nr of vessels in ERS", len(registered_callsigns))
 
         for month in range(1, 13):
             filepath = f"../../../Test/IDUN/Processed_AIS_{year}/Cleaned_pq_new/{month:02d}.parquet"
 
             df_ais = read_ais_parquet(parquet_path=filepath, callsigns=registered_callsigns)
+            print("Callsigns matched in ais ", df_ais["callsign"].nunique())
 
             df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
             df_ais_with_labels.to_parquet(f"sub_labels/ais_ers_sub_labels_{month:02d}_{year}.parquet", index=False)

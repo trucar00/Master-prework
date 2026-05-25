@@ -510,7 +510,7 @@ def main2():
     return
 
 def main3():
-    path = "sub_labels/ais_ers_labels_"
+    path = "sub_labels/ais_ers_sub_labels_"
     for year in range(2025, 2025+1):
         for start in range(1, 12+1, 3):   # starts at 1 and 
             dfs = []

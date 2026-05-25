@@ -1,8 +1,8 @@
 import pandas as pd
 import pyarrow.parquet as pq
 
-#GEAR_TYPES = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn", "Bur og ruser"]
-GEAR_TYPES = ["Krokredskap"]
+GEAR_TYPES = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn", "Bur og ruser"]
+#EAR_TYPES = ["Krokredskap"]
 
 DURATION_LIMITS = {
     "Trål": (30, 500),
@@ -137,6 +137,7 @@ def assign_ais_message_to_label(df_ais, df_ers):
 def local_main():
     df_ers = get_ers(ers_path="Data/ers-fangstmelding-nonan-2024.csv")
     registered_callsigns = get_registered_callsigns(df_ers)
+    print(len(registered_callsigns))
 
     df_ais = read_ais_parquet(parquet_path="Data/AIS/whole_month_new/09.parquet", callsigns=registered_callsigns)
 
@@ -150,6 +151,7 @@ def main():
     for year in range(2025, 2025+1):
         df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")
         registered_callsigns = get_registered_callsigns(df_ers)
+        print("Nr of vessels ", len(registered_callsigns))
 
         for month in range(1, 13):
             filepath = f"../../../Test/IDUN/Processed_AIS_{year}/Cleaned_pq_new/{month:02d}.parquet"

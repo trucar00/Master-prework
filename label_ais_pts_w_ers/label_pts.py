@@ -155,7 +155,7 @@ def local_main():
 
 # yeeha
 def main():
-    for year in range(2025, 2025+1):
+    for year in range(2023, 2024+1):
         df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")
         registered_callsigns = get_registered_callsigns(df_ers)
         print("Nr of vessels in ERS", len(registered_callsigns))

@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --account=share-ie-idi
 #SBATCH --partition=CPUQ
-#SBATCH --time=6:00:00
+#SBATCH --time=4:00:00
 #SBATCH --nodes=1             # 1 compute nodes
 #SBATCH --cpus-per-task=8     # 2 CPU cores
 #SBATCH --mem=128G             # GB memory
-#SBATCH --output=confident2/output_conf2_2023_2024_2025.txt    # Log file
+#SBATCH --output=all_vessels_2025_w_labels/output_labeling_all_2025.txt    # Log file
 #SBATCH --mail-user=trulsc00@gmail.com
 #SBATCH --mail-type=ALL
 
@@ -21,4 +21,4 @@ source ~/venv/myenv/bin/activate
 
 # Run your script
 #python label_pts.py
-python confident_negs_scale_fast.py
+python label_pts_all_ais.py

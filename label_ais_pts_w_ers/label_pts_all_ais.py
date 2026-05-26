@@ -157,7 +157,7 @@ def main():
             df_ais = read_ais_parquet(parquet_path=filepath)
 
             df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
-            df_ais_with_labels.to_parquet(f"all_vessels_w_labels/ais_ers_labels_all_{month:02d}_{year}.parquet", index=False)
+            df_ais_with_labels.to_parquet(f"all_vessels_2025_w_labels/ais_ers_labels_all_{month:02d}_{year}.parquet", index=False)
 
 
 if __name__ == "__main__":

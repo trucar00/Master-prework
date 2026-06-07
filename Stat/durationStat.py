@@ -4,6 +4,21 @@ import pyarrow.parquet as pq
 import seaborn as sns
 import numpy as np
 
+
+plt.rcParams.update({
+    "font.family": "STIXGeneral",
+    "mathtext.fontset": "stix",
+    "font.size": 16,
+    "axes.labelsize": 16,
+    "legend.fontsize": 16,
+    "legend.title_fontsize": 16,
+    "xtick.labelsize": 16,
+    "ytick.labelsize": 16,
+    "axes.axisbelow": True,
+})
+
+colors = plt.get_cmap("tab10").colors
+
 files = [
     "Data/ers-fangstmelding-nonan-2023.csv",
     "Data/ers-fangstmelding-nonan-2024.csv",
@@ -43,36 +58,54 @@ gear_translation = {
     "Trål": "Trawl",
     "Not": "Purse seine",
     "Krokredskap": "Hook gear",
-    "Snurrevad": "Danish seine",
+    "Snurrevad": "Scottish/Danish seine",
     "Garn": "Gillnet",
     "Bur og ruser": "Traps",
 }
 
-plt.figure()
+df_fishing = df_ers.loc[
+    df_ers["Aktivitet"].isin(activity_flags) &
+    df_ers["Redskap - gruppe"].isin(gears)
+].copy()
 
-for gear in gears:
+duration_span_90 = (
+    df_fishing
+    .groupby("Redskap - gruppe")["Varighet"]
+    .quantile([0.05, 0.95])
+    .unstack()
+    .rename(columns={0.05: "p5", 0.95: "p95"})
+)
+
+duration_span_90["span"] = duration_span_90["p95"] - duration_span_90["p5"]
+duration_span_90["gear"] = duration_span_90.index.map(gear_translation)
+
+print(duration_span_90[["gear", "p5", "p95", "span"]])
+
+plt.figure(figsize=(12,6))
+
+for i, gear in enumerate(gears):
 
     gear_specific = df_ers.loc[df_ers["Redskap - gruppe"] == gear].copy()
     reported_gear_fishing = gear_specific.loc[
         gear_specific["Aktivitet"].isin(activity_flags)
     ].copy()
-
+    
     sns.kdeplot(
         reported_gear_fishing["Varighet"].dropna(),
         label=gear_translation[gear],
-        clip=(0, 1800),
-        linewidth=2.5
+        clip=(0, 1750),
+        linewidth=2.5,
+        color=colors[i]
         
     )
 
-plt.xlabel("Minutes", fontsize=14)
-plt.ylabel("Density", fontsize=14)
+plt.xlabel("Minutes")
+plt.ylabel("Density")
 #plt.title("Duration by gear type")
-plt.legend(fontsize=12)
 plt.xticks(np.arange(0, df_ers["Varighet"].max(), 250))
-plt.xticks(fontsize=12)
-plt.yticks(fontsize=12)
-plt.tight_layout()
-plt.subplots_adjust(left=0.08)  # reduce left margin
-plt.xlim(0, 1800)
+plt.legend()
+plt.xlim(0, 1700)
+plt.margins(x=0.02)
+
+#plt.savefig("duration_stat.pdf", bbox_inches="tight", pad_inches=0.05)
 plt.show()

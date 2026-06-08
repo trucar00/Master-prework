@@ -541,7 +541,7 @@ def main3():
                 df = add_confidence_flags(df)
                 
                 gear_name = next(iter(g))
-                if gear_name == "Bur og ruser":
+                if gear_name == "Bur og ruser": # Does not change the values in "report" == Bur og ruser ...
                     gear_name = "Traps"
                 df.to_parquet(f"confident2/{gear_name}_{year}_{start}_{start+2}.parquet", index=False)
 

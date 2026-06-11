@@ -3,3 +3,7 @@ Data/
 find_sts/saved_sts/
 *.csv
 *.parquet
+conf_labels/
+Stat/
+*.pdf
+Stat/catch_per_gear.pdf

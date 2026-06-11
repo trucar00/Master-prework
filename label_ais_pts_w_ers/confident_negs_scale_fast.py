@@ -408,7 +408,7 @@ def add_confidence_flags(df):
     ).astype(int)
 
     df["conf_no_fishing"] = df["passed_any_rule"] & (df["report"] == "no_fishing")
-    df["unknown_no_fishing"] = (df["report"] == "no_fishing") &(~df["passed_any_rule"])
+    df["unknown_no_fishing"] = (df["report"] == "no_fishing") & (~df["passed_any_rule"])
 
     return df
 
@@ -609,14 +609,14 @@ def plot(df, gear_set):
 
 
 if __name__ == "__main__":
-    main3()
+    #main3()
 
 
-    """ df = pd.read_parquet("conf_labels/Bur og ruser_conf_no_fishing_ais_2024_2month.parquet")
+    df = pd.read_parquet("conf_labels/Not_2024_1_3.parquet")
     print(df.head())
     print(df.tail())
     print(df["no_fish_cl"].value_counts())
-    plot(df, gear_set={"Krokredskap", "Trål", "Not", "Garn", "Snurrevad", "Bur og ruser"}) """
+    plot(df, gear_set={"Krokredskap", "Trål", "Not", "Garn", "Snurrevad", "Bur og ruser"})
 
     """ for i in range(5):
         g = LIST[i]

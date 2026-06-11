@@ -8,12 +8,12 @@ import numpy as np
 plt.rcParams.update({
     "font.family": "STIXGeneral",
     "mathtext.fontset": "stix",
-    "font.size": 16,
-    "axes.labelsize": 16,
-    "legend.fontsize": 16,
-    "legend.title_fontsize": 16,
-    "xtick.labelsize": 16,
-    "ytick.labelsize": 16,
+    "font.size": 20,
+    "axes.labelsize": 20,
+    "legend.fontsize": 20,
+    "legend.title_fontsize": 20,
+    "xtick.labelsize": 20,
+    "ytick.labelsize": 20,
     "axes.axisbelow": True,
 })
 
@@ -51,16 +51,17 @@ df_ers["Redskap - gruppe"] = df_ers["Redskap - gruppe"].astype("string").str.str
 df_ers["Varighet"] = pd.to_numeric(df_ers["Varighet"], errors="coerce")
 df_ers = df_ers.loc[df_ers["Varighet"] < 2000].copy()
 
-gears = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn", "Bur og ruser"]
+gears = ["Trål", "Krokredskap", "Bur og ruser", "Garn", "Not", "Snurrevad"]
 activity_flags = ["I fiske"]
 
 gear_translation = {
     "Trål": "Trawl",
-    "Not": "Purse seine",
-    "Krokredskap": "Hook gear",
-    "Snurrevad": "Scottish/Danish seine",
-    "Garn": "Gillnet",
+    "Krokredskap": "Hooked gear",
     "Bur og ruser": "Traps",
+    "Garn": "Gillnet",
+    "Not": "Purse seine",
+    "Snurrevad": "Danish/Scottish seine",
+    
 }
 
 df_fishing = df_ers.loc[
@@ -107,5 +108,5 @@ plt.legend()
 plt.xlim(0, 1700)
 plt.margins(x=0.02)
 
-#plt.savefig("duration_stat.pdf", bbox_inches="tight", pad_inches=0.05)
+plt.savefig("duration_stat.pdf", bbox_inches="tight", pad_inches=0.05)
 plt.show()

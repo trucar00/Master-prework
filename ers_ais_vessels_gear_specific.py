@@ -56,10 +56,10 @@ def get_callsigns(month, gear, year=2024):
 
     return callsigns
 
-GEAR = "Bur og ruser"
+GEAR = "Not"
 
 
-for month in range(12, 12+1):
+for month in range(1, 12+1):
     callsigns = get_callsigns(month=month, gear=GEAR)
     print(f"Nr of only {GEAR}: ", len(callsigns)) # Callsigns that have only registered Trål
 
@@ -71,21 +71,11 @@ for month in range(12, 12+1):
     )
 
     df_ais = table.to_pandas()
-    df_ais.to_parquet(f"gear/traps/{month:02d}.parquet", index=False)
+    df_ais.to_parquet(f"gear/not2/{month:02d}.parquet", index=False)
 
 
 
-# AIS format
-# time, loc, callsign, gear, start_pos, end_pos
 
-# can use start time (and end time) to approximate some time window in which the gear is being used, !!
-# and then color the plots when they report that they begin fishing, seem innaccurate
-# redskap, tidsrom, 
-# all ais messages that 
-# plot ais messages only within the timewindow the gear is being used. finne trål, finne lsm når de endrer redskap. 
-# create a dataset where we redskap start and redskap end. 
-
-# for every callsign: can find the time window in which the redskap is being used
 
 
 

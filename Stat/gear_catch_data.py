@@ -18,7 +18,7 @@ gear_translation = {
 
 }
 
-for year in range(2022, 2025):
+for year in range(2023, 2025+1):
     df_year = df.loc[df["Fangstår"] == year].copy()
     for gear, d in df_year.groupby("Redskap - gruppe"):
 
@@ -50,10 +50,10 @@ plt.rcParams.update({
     "mathtext.fontset": "cm",   # Computer Modern look
     "font.size": 16,
     "axes.labelsize": 16,
-    "legend.fontsize": 14,
+    "legend.fontsize": 16,
     "legend.title_fontsize": 16,
-    "xtick.labelsize": 14,
-    "ytick.labelsize": 14,
+    "xtick.labelsize": 16,
+    "ytick.labelsize": 16,
     "axes.axisbelow": True,
 })
 
@@ -65,5 +65,6 @@ plt.xticks(rotation=45, ha="right")
 plt.grid(axis="y", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.margins(x=0.02)
-#plt.show()
+
 plt.savefig("catch_per_gear.pdf", bbox_inches="tight")
+plt.show()

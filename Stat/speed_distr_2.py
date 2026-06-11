@@ -3,8 +3,19 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 
+plt.rcParams.update({
+    "font.family": "serif",
+    "mathtext.fontset": "cm",   # Computer Modern look
+    "font.size": 16,
+    "axes.labelsize": 16,
+    "legend.fontsize": 16,
+    "legend.title_fontsize": 16,
+    "xtick.labelsize": 16,
+    "ytick.labelsize": 16,
+    "axes.axisbelow": True,
+})
 
-GEAR = "trawl"
+GEAR = "hook"
 
 dfs = []
 
@@ -22,7 +33,7 @@ for month in range(1, 2+1):
 all_df = pd.concat(dfs, ignore_index=True)
 print(all_df.shape)
 
-
+#all_df = all_df[all_df["report"]]
 all_df = all_df.dropna(subset=["speed"])
 all_df = all_df[(all_df["speed"] > 0) & (all_df["speed"] < 20)]
 
@@ -31,12 +42,13 @@ plt.figure(figsize=(8,5))
 sns.kdeplot(
     all_df["speed"],
     fill=False,
-    label=GEAR
+    label=GEAR,
+    linewidth=2.5,
+    cut=0
 )
 
-plt.xlabel("Speed")
+plt.xlabel("Speed [knots]")
 plt.ylabel("Density")
-plt.title(f"Speed density distribution {GEAR}")
 
 plt.legend()
 plt.show()

@@ -134,70 +134,6 @@ def speed_rule(df, speed_threshold, window_len):
 
     return df.drop(columns=["time_bin", "high_speed_new"])
 
-def close_to_port(
-    df,
-    threshold_km=3,
-    raster_path="distance-from-port.tiff",
-    lon_col="lon",
-    lat_col="lat",
-    round_decimals=4,
-):
-    print(f"Checking distance to port. Port threshold: {threshold_km} km")
-
-    df = df.copy()
-
-    print("Rounding coordinates...")
-    df["lon_r"] = df[lon_col].round(round_decimals)
-    df["lat_r"] = df[lat_col].round(round_decimals)
-
-    print("Finding unique coordinates...")
-    unique_pts = df[["lon_r", "lat_r"]].drop_duplicates().copy()
-
-    with rasterio.open(raster_path) as src:
-        print("Reading raster metadata...")
-        band = src.read(1)
-        nodata = src.nodata
-
-        lon = unique_pts["lon_r"].to_numpy()
-        lat = unique_pts["lat_r"].to_numpy()
-
-        # Most GFW rasters are lon/lat, but this makes it robust
-        if src.crs is not None and src.crs.to_string() != "EPSG:4326":
-            transformer = Transformer.from_crs("EPSG:4326", src.crs, always_xy=True)
-            x, y = transformer.transform(lon, lat)
-        else:
-            x, y = lon, lat
-
-        print("Converting coordinates to raster indices...")
-        rows, cols = rowcol(src.transform, x, y)
-        rows = np.asarray(rows)
-        cols = np.asarray(cols)
-
-        valid = (
-            (rows >= 0) & (rows < band.shape[0]) &
-            (cols >= 0) & (cols < band.shape[1])
-        )
-
-        print("Sampling raster...")
-        dist = np.full(len(unique_pts), np.nan, dtype="float32")
-        dist[valid] = band[rows[valid], cols[valid]]
-
-        if nodata is not None:
-            dist[dist == nodata] = np.nan
-
-        unique_pts["dist_to_port_km"] = dist
-
-    print("Merging back...")
-    df = df.merge(unique_pts, on=["lon_r", "lat_r"], how="left")
-
-    df["close_to_port"] = (
-        df["dist_to_port_km"] < threshold_km
-    ).astype("int8")
-
-    print("Cleaning up...")
-    df = df.drop(columns=["lon_r", "lat_r"])
-
-    return df
 
 def close_to_shore(df, threshold_km, raster_path="distance-from-shore.tif"):
     print(f"Checking distance to shore. Shore threshold: {threshold_km}")
@@ -483,8 +419,9 @@ SPEED_THRESHOLD = 10
 SPEED_WINDOW = pd.Timedelta(minutes=20)
 
 PORT_THRESHOLD_KM = 5
+SHORE_THRESHOLD_KM = 5
 
-HALF_WINDOW = pd.Timedelta(minutes=20) # looks 40 minutes in total then? maybe a bit long?
+HALF_WINDOW = pd.Timedelta(minutes=10) # looks 40 minutes in total then? maybe a bit long?
 MIN_MESSAGES = 10
 
 ALLOWED = ["Not", "no_fishing"]
@@ -499,8 +436,8 @@ N_CLUSTERS = 2
 
 def main3():
     path = "sub_labels/ais_ers_sub_labels_"
-    for year in range(2023, 2025+1):
-        for start in range(1, 12+1, 3):   # starts at 1 and 
+    for year in range(2024, 2025+1):
+        for start in range(1, 3+1, 3):   # starts at 1 and 
             dfs = []
             for i in range(start, start + 3):
                 df = pd.read_parquet(f"{path}{i:02d}_{year}.parquet")
@@ -519,8 +456,8 @@ def main3():
     
                 df = speed_rule(df, speed_threshold=SPEED_THRESHOLD, window_len=SPEED_WINDOW)
         
-                df = close_to_port(df, threshold_km=PORT_THRESHOLD_KM)
-                #df = close_to_shore(df, threshold_km=SPEED_THRESHOLD)
+                #df = close_to_port(df, threshold_km=PORT_THRESHOLD_KM)
+                df = close_to_shore(df, threshold_km=SHORE_THRESHOLD_KM)
         
                 feats_df_for_clustering = features_for_clustering(df, half_window=HALF_WINDOW, min_messages=MIN_MESSAGES)
                 df = cluster_no_fishing(df, df_cluster_feats=feats_df_for_clustering, n_clusters=N_CLUSTERS)
@@ -532,7 +469,7 @@ def main3():
                 gear_name = next(iter(g))
                 if gear_name == "Bur og ruser": # Does not change the values in "report" == Bur og ruser ...
                     gear_name = "Traps"
-                df.to_parquet(f"confident2/{gear_name}_{year}_{start}_{start+2}.parquet", index=False)
+                df.to_parquet(f"confident_new_rule/{gear_name}_{year}_{start}_{start+2}.parquet", index=False)
 
                 del df, feats_df_for_clustering
                 gc.collect()

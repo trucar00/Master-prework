@@ -5,7 +5,7 @@
 #SBATCH --nodes=1             # 1 compute nodes
 #SBATCH --cpus-per-task=8     # 2 CPU cores
 #SBATCH --mem=128G             # GB memory
-#SBATCH --output=all_vessels_2025_w_labels/output_labeling_all_2025.txt    # Log file
+#SBATCH --output=confident_new_rule/output_confident_new_rule_test_10_min_K-feats%j.txt    # Log file
 #SBATCH --mail-user=trulsc00@gmail.com
 #SBATCH --mail-type=ALL
 
@@ -21,4 +21,4 @@ source ~/venv/myenv/bin/activate
 
 # Run your script
 #python label_pts.py
-python label_pts_all_ais.py
+python confident_negs_NEW_scale_fast.py

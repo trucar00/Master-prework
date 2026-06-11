@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account=share-ie-idi
 #SBATCH --partition=CPUQ
-#SBATCH --time=4:00:00
+#SBATCH --time=5:00:00
 #SBATCH --nodes=1             # 1 compute nodes
 #SBATCH --cpus-per-task=8     # 2 CPU cores
 #SBATCH --mem=128G             # GB memory
@@ -21,4 +21,4 @@ source ~/venv/myenv/bin/activate
 
 # Run your script
 #python label_pts.py
-python confident_negs_NEW_scale_fast.py
+python -u confident_negs_NEW_scale_fast.py

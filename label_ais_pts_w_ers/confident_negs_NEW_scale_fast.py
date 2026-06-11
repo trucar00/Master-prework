@@ -436,8 +436,8 @@ N_CLUSTERS = 2
 
 def main3():
     path = "sub_labels/ais_ers_sub_labels_"
-    for year in range(2024, 2025+1):
-        for start in range(1, 3+1, 3):   # starts at 1 and 
+    for year in range(2023, 2025+1):
+        for start in range(1, 12+1, 3):   # starts at 1 and 
             dfs = []
             for i in range(start, start + 3):
                 df = pd.read_parquet(f"{path}{i:02d}_{year}.parquet")

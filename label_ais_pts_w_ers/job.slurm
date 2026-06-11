@@ -5,7 +5,7 @@
 #SBATCH --nodes=1             # 1 compute nodes
 #SBATCH --cpus-per-task=8     # 2 CPU cores
 #SBATCH --mem=128G             # GB memory
-#SBATCH --output=confident_new_rule/output_confident_new_rule_test_10_min_K-feats%j.txt    # Log file
+#SBATCH --output=confident_new_rule/output_confident_new_rule%j.txt    # Log file
 #SBATCH --mail-user=trulsc00@gmail.com
 #SBATCH --mail-type=ALL
 

@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=8     # 2 CPU cores
 #SBATCH --mem=128G             # GB memory
 #SBATCH --output=confident_new_rule_new_duration/output_2025_%j.txt    # Log file
-#SBATCH --job-name=Get_confidents_of_new_durationLabeled 
+#SBATCH --job-name=Get_confidents_of_new_durationLabeled_2025
 #SBATCH --mail-user=trulsc00@gmail.com
 #SBATCH --mail-type=ALL
 

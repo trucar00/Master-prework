@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --account=share-ie-idi
 #SBATCH --partition=CPUQ
-#SBATCH --time=5:00:00
+#SBATCH --time=2:00:00
 #SBATCH --nodes=1             # 1 compute nodes
 #SBATCH --cpus-per-task=8     # 2 CPU cores
 #SBATCH --mem=128G             # GB memory
-#SBATCH --output=confident_new_rule/output_confident_new_rule%j.txt    # Log file
+#SBATCH --output=new_duration_limits/output_confident_new_rule%j.txt    # Log file
 #SBATCH --mail-user=trulsc00@gmail.com
 #SBATCH --mail-type=ALL
 
@@ -21,4 +21,4 @@ source ~/venv/myenv/bin/activate
 
 # Run your script
 #python label_pts.py
-python -u confident_negs_NEW_scale_fast.py
+python -u label_pts_all_ais.py

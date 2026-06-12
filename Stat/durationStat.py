@@ -49,9 +49,10 @@ df_ers["Stopptidspunkt"] = pd.to_datetime(df_ers["Stopptidspunkt"], format=fmt)
 df_ers["Radiokallesignal (ERS)"] = df_ers["Radiokallesignal (ERS)"].astype("string").str.strip().str.upper()
 df_ers["Redskap - gruppe"] = df_ers["Redskap - gruppe"].astype("string").str.strip()
 df_ers["Varighet"] = pd.to_numeric(df_ers["Varighet"], errors="coerce")
-df_ers = df_ers.loc[df_ers["Varighet"] < 2000].copy()
+df_ers = df_ers.loc[df_ers["Varighet"] < 2880].copy()
 
 gears = ["Trål", "Krokredskap", "Bur og ruser", "Garn", "Not", "Snurrevad"]
+#gears = ["Bur og ruser"]
 activity_flags = ["I fiske"]
 
 gear_translation = {
@@ -94,7 +95,7 @@ for i, gear in enumerate(gears):
     sns.kdeplot(
         reported_gear_fishing["Varighet"].dropna(),
         label=gear_translation[gear],
-        clip=(0, 1750),
+        clip=(0, 2000),
         linewidth=2.5,
         color=colors[i]
         
@@ -103,10 +104,10 @@ for i, gear in enumerate(gears):
 plt.xlabel("Minutes")
 plt.ylabel("Density")
 #plt.title("Duration by gear type")
-plt.xticks(np.arange(0, df_ers["Varighet"].max(), 250))
+plt.xticks(np.arange(0, df_ers["Varighet"].max(), 200))
 plt.legend()
-plt.xlim(0, 1700)
+plt.xlim(0, 2000)
 plt.margins(x=0.02)
 
-plt.savefig("duration_stat.pdf", bbox_inches="tight", pad_inches=0.05)
+#plt.savefig("duration_stat.pdf", bbox_inches="tight", pad_inches=0.05)
 plt.show()

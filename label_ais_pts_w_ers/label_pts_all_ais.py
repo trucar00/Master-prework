@@ -2,15 +2,15 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 GEAR_TYPES = ["Trål", "Not", "Krokredskap", "Snurrevad", "Garn", "Bur og ruser"]
-#GEAR_TYPES = ["Krokredskap"]
+#GEAR_TYPES = ["Bur og ruser"]
 
 DURATION_LIMITS = {
-    "Trål": (30, 500),
-    "Not": (15, 250),
-    "Snurrevad": (15, 250),
+    "Trål": (30, 600),
+    "Not": (10, 250),
+    "Snurrevad": (10, 250),
     "Krokredskap": (500, 1500), # 500 1500
     "Garn": (150, 1000),
-    "Bur og ruser": (15, 300)
+    "Bur og ruser": (10, 300)
 }
 
 def get_ers(ers_path, gear_types=GEAR_TYPES, activities=["I fiske"]):
@@ -146,7 +146,7 @@ def local_main():
 
 # yeeha
 def main():
-    for year in range(2025, 2025+1):
+    for year in range(2024, 2024+1):
         df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")
         registered_callsigns = get_registered_callsigns(df_ers)
         print("Nr of vessels in ERS", len(registered_callsigns))
@@ -157,7 +157,7 @@ def main():
             df_ais = read_ais_parquet(parquet_path=filepath)
 
             df_ais_with_labels = assign_ais_message_to_label(df_ais, df_ers)
-            df_ais_with_labels.to_parquet(f"all_vessels_2025_w_labels/ais_ers_labels_all_{month:02d}_{year}.parquet", index=False)
+            df_ais_with_labels.to_parquet(f"new_duration_limits/ais_ers_labels_{month:02d}_{year}.parquet", index=False)
 
 
 if __name__ == "__main__":

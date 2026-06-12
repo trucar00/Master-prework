@@ -8,7 +8,7 @@ DURATION_LIMITS = {
     "Trål": (30, 600),
     "Not": (10, 250),
     "Snurrevad": (10, 250),
-    "Krokredskap": (500, 1500), # 500 1500
+    "Krokredskap": (500, 1500), 
     "Garn": (150, 1000),
     "Bur og ruser": (10, 300)
 }
@@ -146,7 +146,7 @@ def local_main():
 
 # yeeha
 def main():
-    for year in range(2024, 2024+1):
+    for year in range(2025, 2025+1):
         df_ers = get_ers(ers_path=f"ers-fangstmelding-nonan-{year}.csv")
         registered_callsigns = get_registered_callsigns(df_ers)
         print("Nr of vessels in ERS", len(registered_callsigns))

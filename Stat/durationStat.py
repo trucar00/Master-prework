@@ -95,7 +95,7 @@ for i, gear in enumerate(gears):
     sns.kdeplot(
         reported_gear_fishing["Varighet"].dropna(),
         label=gear_translation[gear],
-        clip=(0, 2000),
+        clip=(0, 1700),
         linewidth=2.5,
         color=colors[i]
         
@@ -106,8 +106,8 @@ plt.ylabel("Density")
 #plt.title("Duration by gear type")
 plt.xticks(np.arange(0, df_ers["Varighet"].max(), 200))
 plt.legend()
-plt.xlim(0, 2000)
+plt.xlim(0, 1700)
 plt.margins(x=0.02)
 
-#plt.savefig("duration_stat.pdf", bbox_inches="tight", pad_inches=0.05)
+plt.savefig("duration_stat.pdf", bbox_inches="tight", pad_inches=0.05)
 plt.show()

@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=8     # 2 CPU cores
 #SBATCH --mem=128G             # GB memory
 #SBATCH --output=new_duration_limits/output_2025_%j.txt    # Log file
-#SBATCH --job-name=Label data 
+#SBATCH --job-name=Labeling_data 
 #SBATCH --mail-user=trulsc00@gmail.com
 #SBATCH --mail-type=ALL
 

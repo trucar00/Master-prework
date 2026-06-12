@@ -421,7 +421,7 @@ SPEED_WINDOW = pd.Timedelta(minutes=20)
 PORT_THRESHOLD_KM = 5
 SHORE_THRESHOLD_KM = 5
 
-HALF_WINDOW = pd.Timedelta(minutes=10) # looks 40 minutes in total then? maybe a bit long?
+HALF_WINDOW = pd.Timedelta(minutes=20) # looks 40 minutes in total then? maybe a bit long?
 MIN_MESSAGES = 10
 
 ALLOWED = ["Not", "no_fishing"]

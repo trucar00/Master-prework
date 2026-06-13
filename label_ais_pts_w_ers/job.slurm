@@ -22,4 +22,5 @@ source ~/venv/myenv/bin/activate
 
 # Run your script
 #python label_pts.py
+python -u label_pts_all_ais.py
 python -u confident_negs_NEW_scale_fast.py
